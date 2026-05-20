@@ -10,16 +10,6 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js"
   },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.40.0",
-    "bcrypt": "^5.1.1",
-    "better-sqlite3": "^11.7.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
-    "nanoid": "^5.0.9",
-    "openai": "^4.77.0"
-  }
+  "_comment": "Runtime dependencies are hoisted to the root package.json so electron-builder bundles them with the desktop app. `npm install` at the repo root is sufficient — no separate install needed here.",
+  "dependencies": {}
 }
