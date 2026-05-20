@@ -10,6 +10,13 @@ import './style.css';
 const theme = localStorage.getItem('aramis_theme') || 'dark';
 if (theme === 'dark') document.documentElement.classList.add('dark');
 
+// Detect Electron + macOS so CSS can reserve space for the traffic-light buttons.
+const ua = navigator.userAgent || '';
+const isElectron = /Electron\//i.test(ua);
+const isMac = /Mac/i.test(navigator.platform || '') || /Mac OS X/i.test(ua);
+if (isElectron) document.documentElement.classList.add('is-electron');
+if (isElectron && isMac) document.documentElement.classList.add('is-electron-mac');
+
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);

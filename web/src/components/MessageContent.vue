@@ -9,5 +9,5 @@ const html = computed(() => {
 });
 </script>
 <template>
-  <div class="prose-chat" v-html="html" />
+  <div class="prose-chat" dir="auto" v-html="html" />
 </template>

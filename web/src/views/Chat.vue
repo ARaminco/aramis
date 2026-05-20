@@ -207,7 +207,7 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
       class="fixed md:static inset-y-0 z-50 w-[80%] max-w-xs md:w-72 md:max-w-none shrink-0 border-s border-border flex flex-col bg-card transition-transform duration-200 ease-out rtl:right-0 ltr:left-0 md:!translate-x-0"
       :class="sidebarOpen ? 'translate-x-0' : 'rtl:translate-x-full ltr:-translate-x-full'"
     >
-      <div class="p-3 flex items-center gap-2 border-b border-border">
+      <div class="sidebar-header p-3 flex items-center gap-2 border-b border-border">
         <div class="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
           <Bot class="h-4 w-4 text-primary" />
         </div>
@@ -250,7 +250,7 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
           ]"
         >
           <MessageSquare class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span class="truncate flex-1 min-w-0">{{ c.title || t('new_chat') }}</span>
+          <span class="truncate flex-1 min-w-0" dir="auto">{{ c.title || t('new_chat') }}</span>
           <span class="opacity-0 group-hover:opacity-100 md:flex gap-1 hidden">
             <span class="p-1 rounded hover:bg-background/60" @click.stop="startRename(c)"><Pencil class="h-3.5 w-3.5" /></span>
             <span class="p-1 rounded hover:bg-background/60" @click.stop="deleteChat(c)"><Trash2 class="h-3.5 w-3.5 text-destructive" /></span>
@@ -280,12 +280,12 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
     <!-- Main -->
     <main class="flex-1 flex flex-col min-w-0 relative">
       <!-- Top bar (mobile + chat title on all sizes) -->
-      <header class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-card/40 backdrop-blur-sm">
+      <header class="main-header flex items-center gap-2 px-3 py-2.5 border-b border-border bg-card/40 backdrop-blur-sm">
         <Button variant="ghost" size="icon" class="md:hidden" @click="sidebarOpen = true">
           <Menu class="h-5 w-5" />
         </Button>
         <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium truncate">{{ activeChatTitle }}</div>
+          <div class="text-sm font-medium truncate" dir="auto">{{ activeChatTitle }}</div>
         </div>
         <Button v-if="store.activeId" variant="ghost" size="icon" class="md:hidden" @click="newChat">
           <Plus class="h-5 w-5" />
@@ -323,7 +323,10 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
           <template v-for="(m, idx) in store.messages" :key="idx">
             <!-- User -->
             <div v-if="m.role === 'user'" class="flex gap-2.5 justify-end animate-fade-in">
-              <div class="rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-3.5 py-2.5 max-w-[85%] sm:max-w-[80%] whitespace-pre-wrap text-sm leading-relaxed shadow-sm">
+              <div
+                class="rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-3.5 py-2.5 max-w-[85%] sm:max-w-[80%] whitespace-pre-wrap text-sm leading-relaxed shadow-sm"
+                dir="auto"
+              >
                 {{ m.content }}
               </div>
               <div class="h-7 w-7 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">

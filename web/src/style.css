@@ -1,4 +1,48 @@
-@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+/*
+  Vazirmatn — used ONLY for Persian/Arabic glyphs in any locale.
+  unicode-range restricts the font to the relevant code points, so Latin text
+  always falls back to the next font in the stack (system / Tailwind sans).
+*/
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Regular.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
+                 U+200C-200F, U+2010-201F, U+2066-2069,
+                 U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Medium.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
+                 U+200C-200F, U+2010-201F, U+2066-2069,
+                 U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-SemiBold.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
+                 U+200C-200F, U+2010-201F, U+2066-2069,
+                 U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Bold.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
+                 U+200C-200F, U+2010-201F, U+2066-2069,
+                 U+FB50-FDFF, U+FE70-FEFF;
+}
 
 @tailwind base;
 @tailwind components;
@@ -60,7 +104,11 @@
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
   }
-  html[lang="en"] body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  /* English locale — Latin gets system sans, Persian still falls through to
+     Vazirmatn via the unicode-range @font-face above (always last in the stack). */
+  html[lang="en"] body {
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Vazirmatn', sans-serif;
+  }
   pre, code, kbd, samp {
     direction: ltr;
     text-align: left;
@@ -71,6 +119,42 @@
     input, textarea, select { font-size: 16px !important; }
   }
   button { -webkit-user-select: none; user-select: none; }
+}
+
+/* ===========================================================
+   macOS Electron — reserve top-left space for the traffic-light buttons.
+   The lights live in a ~78×28 area at the top-left of the window.
+   We pad whichever element occupies that corner of the layout:
+     • LTR desktop:  sidebar header
+     • RTL desktop:  main top header (sidebar is on the right)
+     • Mobile:       main top header (sidebar is a drawer)
+   We also make the top row of those bars a window-drag region so the user
+   can still drag the window from there.
+   =========================================================== */
+@layer base {
+  html.is-electron-mac[dir="ltr"] .sidebar-header {
+    padding-left: 78px;
+  }
+  html.is-electron-mac[dir="rtl"] .main-header {
+    padding-left: 78px;
+  }
+  @media (max-width: 767px) {
+    html.is-electron-mac .main-header {
+      padding-left: 78px;
+    }
+  }
+  /* Make titlebar areas draggable, but exempt all interactive controls. */
+  html.is-electron-mac .sidebar-header,
+  html.is-electron-mac .main-header {
+    -webkit-app-region: drag;
+  }
+  html.is-electron-mac .sidebar-header button,
+  html.is-electron-mac .main-header button,
+  html.is-electron-mac .sidebar-header input,
+  html.is-electron-mac .main-header input,
+  html.is-electron-mac .sidebar-header a {
+    -webkit-app-region: no-drag;
+  }
 }
 
 @layer utilities {

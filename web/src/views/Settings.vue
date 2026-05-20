@@ -187,7 +187,7 @@ function goChat() { router.push('/chat'); }
 
 <template>
   <div class="min-h-[100dvh] bg-background text-foreground">
-    <header class="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-sm">
+    <header class="main-header sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-sm">
       <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
         <Button variant="ghost" size="icon" @click="goChat" :title="t('go_to_chat')">
           <ArrowRight v-if="locale === 'fa'" class="h-5 w-5" />
