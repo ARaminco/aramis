@@ -1,0 +1,98 @@
+{
+  "name": "aramis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-powered web terminal agent for sysadmin/devops — chat instead of CLI",
+  "author": {
+    "name": "Aliasghar Ramin",
+    "url": "https://aramin.co"
+  },
+  "homepage": "https://aramin.co",
+  "license": "MIT",
+  "main": "electron/main.js",
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix web install",
+    "dev": "concurrently -n server,web -c blue,magenta \"npm --prefix server run dev\" \"npm --prefix web run dev\"",
+    "build:web": "npm --prefix web run build",
+    "build": "npm run build:web",
+    "start": "npm --prefix server start",
+    "electron:dev": "npm run build:web && electron .",
+    "electron:rebuild": "electron-builder install-app-deps",
+    "electron:build:mac": "npm run build:web && electron-builder --mac --publish=never",
+    "electron:build:win": "npm run build:web && electron-builder --win --publish=never",
+    "electron:build:linux": "npm run build:web && electron-builder --linux --publish=never",
+    "electron:build:all": "npm run build:web && electron-builder -mwl --publish=never",
+    "icon:generate": "node electron/generate-icon.mjs",
+    "postinstall": "electron-builder install-app-deps || true"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "co.aramin.aramis",
+    "productName": "Aramis",
+    "copyright": "Copyright © 2026 Aliasghar Ramin (aramin.co)",
+    "asarUnpack": [
+      "server/node_modules/better-sqlite3/**/*"
+    ],
+    "files": [
+      "electron/**/*",
+      "server/src/**/*",
+      "server/package.json",
+      "server/node_modules/**/*",
+      "web/dist/**/*",
+      "package.json",
+      "!**/.DS_Store",
+      "!**/*.md",
+      "!server/data/**/*",
+      "!**/.env*",
+      "!**/{__tests__,test,tests,powered-test,example,examples}",
+      "!**/{.eslintrc.json,.eslintrc.js,.prettierrc,.editorconfig,tsconfig.json}"
+    ],
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "electron"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] }
+      ],
+      "icon": "electron/icon.icns",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "dmg": {
+      "title": "Aramis ${version}",
+      "iconSize": 96,
+      "window": { "width": 540, "height": 360 },
+      "contents": [
+        { "x": 140, "y": 180, "type": "file" },
+        { "x": 400, "y": 180, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "electron/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Aramis"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "electron/icon.png",
+      "category": "Development"
+    }
+  }
+}

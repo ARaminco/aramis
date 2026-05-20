@@ -1,0 +1,393 @@
+import { ref } from 'vue';
+
+const STORAGE_KEY = 'aramis_locale';
+
+const dict = {
+  fa: {
+    // brand
+    app_name: 'Aramis',
+    app_tagline: 'ایجنت هوشمند سیستم',
+
+    // generic
+    save: 'ذخیره',
+    cancel: 'انصراف',
+    delete: 'حذف',
+    rename: 'تغییر نام',
+    confirm: 'تأیید',
+    close: 'بستن',
+    submit: 'ارسال',
+    settings: 'تنظیمات',
+    logout: 'خروج',
+    yes: 'بله',
+    no: 'خیر',
+    loading: 'در حال بارگذاری…',
+    error: 'خطا',
+    success: 'موفق',
+    optional: 'اختیاری',
+    language: 'زبان',
+    theme: 'پوسته',
+    light: 'روشن',
+    dark: 'تاریک',
+
+    // setup
+    setup_title: 'راه‌اندازی اولیه‌ی Aramis',
+    setup_subtitle: 'یک رمز عبور مدیریتی تعیین کنید.',
+    password: 'رمز عبور',
+    confirm_password: 'تکرار رمز عبور',
+    setup_submit: 'ساخت حساب و ورود',
+    setup_hint: 'پس از ورود، در صفحه‌ی تنظیمات کلید API و مدل هوش مصنوعی خود را وارد کنید.',
+    err_password_short: 'رمز عبور باید حداقل ۶ کاراکتر باشد',
+    err_passwords_mismatch: 'رمزها یکسان نیستند',
+
+    // login
+    login_title: 'ورود به Aramis',
+    login_subtitle: 'برای ادامه رمز عبور را وارد کنید.',
+    login_submit: 'ورود',
+
+    // settings
+    ai_section: 'هوش مصنوعی',
+    ai_configured: 'پیکربندی شده',
+    ai_not_configured: 'پیکربندی نشده',
+    provider: 'ارائه‌دهنده',
+    model: 'مدل',
+    api_key: 'کلید API',
+    base_url: 'Base URL',
+    base_url_optional: 'Base URL (اختیاری)',
+    temperature: 'Temperature',
+    request_timeout: 'تایم‌اوت درخواست (ثانیه)',
+    request_timeout_hint: 'حداکثر زمانی که سرور منتظر اولین پاسخ از مدل می‌مونه. روی شبکه‌ی کند یا مدل‌های کند، 120-300 ثانیه بگذارید.',
+    command_approval: 'تأیید دستورات',
+    command_approval_auto: 'خودکار — همه‌ی دستورات اجرا بشن',
+    command_approval_manual: 'دستی — قبل از هر دستور تأیید بگیر',
+    command_approval_hint: 'در حالت دستی، قبل از اجرای هر دستور shell یا تغییر فایل، یه دکمه‌ی تأیید/رد می‌بینی. ask_user و memory همیشه بدون تأیید کار می‌کنن.',
+    approve: 'اجازه بده',
+    deny: 'رد کن',
+    approval_prompt: 'این دستور رو اجرا کنم؟',
+    awaiting_approval: 'منتظر تأیید',
+    declined_state: 'رد شد',
+
+    // voice
+    voice_input: 'ورودی صوتی',
+    voice_unsupported: 'مرورگر شما از ضبط صدا پشتیبانی نمی‌کنه',
+    voice_denied: 'دسترسی به میکروفون رد شد',
+    voice_too_short: 'ضبط خیلی کوتاه بود',
+    voice_transcribing: 'در حال تشخیص گفتار…',
+    voice_failed: (vars) => `تشخیص گفتار ناموفق: ${vars.message}`,
+    voice_provider_required: 'برای ورودی صوتی، در Settings یه provider مثل OpenAI یا Groq تنظیم کنید.',
+
+    // UI scale
+    ui_scale: 'اندازه‌ی متن',
+    ui_scale_hint: 'اندازه‌ی کلی متن و کنترل‌های نرم‌افزار رو تغییر می‌ده.',
+    smaller: 'کوچک‌تر',
+    larger: 'بزرگ‌تر',
+    reset: 'بازنشانی',
+    system_section: 'اطلاعات سیستم میزبان',
+    redetect: 'شناسایی مجدد',
+    change_password: 'تغییر رمز عبور',
+    current_password: 'رمز فعلی',
+    new_password: 'رمز جدید',
+    password_changed: 'رمز عبور تغییر کرد.',
+    err_password_new_short: 'رمز جدید کوتاه است',
+    ai_saved: 'تنظیمات هوش مصنوعی ذخیره شد.',
+    go_to_chat: 'رفتن به چت',
+    ph_api_key_openai: 'sk-...',
+    ph_api_key_ollama: 'برای Ollama اختیاری است',
+    ph_model: 'مثلاً gpt-4.1-mini',
+    ph_base_url_compat: 'مثلاً https://api.example.com/v1',
+    ph_base_url_ollama: 'http://localhost:11434/v1 (اختیاری)',
+    ph_base_url_openai: 'پیش‌فرض: https://api.openai.com/v1',
+    ph_base_url_anthropic: 'پیش‌فرض: https://api.anthropic.com',
+    ph_base_url_default: 'پیش‌فرض ارائه‌دهنده (اختیاری)',
+
+    // chat
+    new_chat: 'گفتگوی جدید',
+    no_chats: 'هنوز گفتگویی نیست.',
+    chats: 'گفتگوها',
+    empty_heading: 'از من بپرسید — مثل یک سیس‌ادمین حرفه‌ای کار می‌کنم',
+    empty_subtext: 'می‌توانم دستور بزنم، فایل بخوانم و بنویسم، پکیج نصب کنم، سرویس‌ها را راه‌اندازی کنم و اگر در میانه‌ی کار به ورودی نیاز داشتم از شما می‌پرسم.',
+    example_disk: 'اوضاع دیسک رو چک کن',
+    example_nginx: 'nginx رو نصب و کانفیگ کن',
+    example_ports: 'پورت‌های باز رو لیست کن',
+    composer_placeholder: 'دستور خود را تایپ کنید… (Shift+Enter برای خط جدید)',
+    composer_hint: 'Aramis می‌تواند دستورات shell و عملیات فایل را روی این میزبان اجرا کند. قبل از عملیات تخریبی از شما تأیید می‌گیرد.',
+    stop: 'توقف',
+    send: 'ارسال',
+    ai_not_configured_banner: 'هنوز هوش مصنوعی پیکربندی نشده.',
+    configure: 'پیکربندی',
+    awaiting_input: 'منتظر ورودی شماست',
+    your_answer: 'پاسخ شما…',
+    rename_chat: 'تغییر نام گفتگو',
+    new_name: 'نام جدید',
+    confirm_delete_chat: (vars) => `گفتگوی «${vars.title}» حذف شود؟`,
+
+    // status / phases
+    phase_connecting: 'در حال اتصال…',
+    phase_thinking: 'در حال فکر کردن…',
+    phase_responding: 'در حال پاسخ‌گویی…',
+    phase_tool_running: (vars) => `در حال اجرای ${vars.tool}…`,
+    phase_done: 'پایان یافت',
+
+    tool_run_command: 'اجرای دستور',
+    tool_read_file: 'خواندن فایل',
+    tool_write_file: 'نوشتن فایل',
+    tool_list_dir: 'فهرست پوشه',
+    tool_ask_user: 'سؤال از کاربر',
+    tool_remember: 'به‌خاطر سپردن',
+    tool_forget: 'فراموش کردن',
+
+    // data / memory
+    data_section: 'داده و حافظه',
+    db_path: 'مسیر دیتابیس',
+    db_size: 'اندازه دیتابیس',
+    stat_chats: 'گفتگو',
+    stat_messages: 'پیام',
+    stat_memory: 'حافظه',
+    stat_settings: 'تنظیم',
+    export_db: 'خروجی گرفتن از دیتابیس',
+    wipe_data: 'پاک‌سازی همه‌ی داده‌ها',
+    wipe_data_confirm: 'تمام گفتگوها، پیام‌ها و حافظه پاک خواهد شد. مطمئنید؟',
+    wipe_data_done: 'داده‌ها پاک شدند.',
+    memory_section: 'حافظه‌ی بلندمدت',
+    memory_empty: 'هنوز چیزی به خاطر سپرده نشده. هر وقت ایجنت چیزی یاد بگیره که در چت‌های بعدی به‌درد بخوره، اینجا ذخیره می‌کنه.',
+    memory_key: 'کلید',
+    memory_value: 'مقدار',
+    memory_kind: 'نوع',
+    memory_updated: 'به‌روزرسانی',
+    kind_preference: 'ترجیح',
+    kind_fact: 'واقعیت',
+    kind_env: 'محیط',
+    kind_secret: 'محرمانه',
+    kind_note: 'یادداشت',
+    add_memory: 'افزودن دستی',
+    confirm_delete_memory: (vars) => `«${vars.key}» را از حافظه حذف کنیم؟`,
+
+    // diagnostics
+    diagnostics_section: 'تست‌های سلامت',
+    run_tests: 'اجرای تست‌ها',
+    diag_hint: 'تست‌ها رو اجرا کن تا سلامت سرور، DB، فایل‌سیستم، شل و اتصال به هوش مصنوعی بررسی بشه.',
+    diag_summary: (v) => `${v.passed} موفق، ${v.failed} ناموفق${v.skipped ? `، ${v.skipped} رد شده` : ''} از ${v.total}`,
+    diag_running: 'در حال اجرا…',
+    diag_server: 'سرور و runtime',
+    diag_db_read: 'خواندن از دیتابیس',
+    diag_db_write: 'نوشتن در دیتابیس',
+    diag_system_detect: 'تشخیص سیستم',
+    diag_file_io: 'خواندن/نوشتن فایل',
+    diag_shell: 'اجرای shell',
+    diag_memory: 'حافظه‌ی بلندمدت',
+    diag_ai_config: 'پیکربندی هوش مصنوعی',
+    diag_ai_ping: 'اتصال به هوش مصنوعی',
+
+    // tool card
+    args: 'پارامترها',
+    result: 'نتیجه',
+    exit_code: 'کد خروج',
+    killed: '(متوقف شد)',
+    running: 'در حال اجرا',
+    done_state: 'انجام شد',
+    failed_state: 'ناموفق',
+  },
+  en: {
+    app_name: 'Aramis',
+    app_tagline: 'Intelligent system agent',
+
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    rename: 'Rename',
+    confirm: 'Confirm',
+    close: 'Close',
+    submit: 'Submit',
+    settings: 'Settings',
+    logout: 'Sign out',
+    yes: 'Yes',
+    no: 'No',
+    loading: 'Loading…',
+    error: 'Error',
+    success: 'Success',
+    optional: 'optional',
+    language: 'Language',
+    theme: 'Theme',
+    light: 'Light',
+    dark: 'Dark',
+
+    setup_title: 'Set up Aramis',
+    setup_subtitle: 'Choose an admin password.',
+    password: 'Password',
+    confirm_password: 'Confirm password',
+    setup_submit: 'Create account & sign in',
+    setup_hint: 'After signing in, open Settings to add your AI API key and model.',
+    err_password_short: 'Password must be at least 6 characters',
+    err_passwords_mismatch: 'Passwords do not match',
+
+    login_title: 'Sign in to Aramis',
+    login_subtitle: 'Enter your password to continue.',
+    login_submit: 'Sign in',
+
+    ai_section: 'AI provider',
+    ai_configured: 'Configured',
+    ai_not_configured: 'Not configured',
+    provider: 'Provider',
+    model: 'Model',
+    api_key: 'API key',
+    base_url: 'Base URL',
+    base_url_optional: 'Base URL (optional)',
+    temperature: 'Temperature',
+    request_timeout: 'Request timeout (seconds)',
+    request_timeout_hint: 'Max time the server waits for the model to start responding. On slow networks or slow models, set 120–300s.',
+    command_approval: 'Command approval',
+    command_approval_auto: 'Auto — run all commands without asking',
+    command_approval_manual: 'Manual — confirm before each command',
+    command_approval_hint: 'In manual mode, every shell command or file write needs an explicit Approve. ask_user and memory tools still run automatically.',
+    approve: 'Approve',
+    deny: 'Deny',
+    approval_prompt: 'Run this command?',
+    awaiting_approval: 'Awaiting approval',
+    declined_state: 'Declined',
+
+    voice_input: 'Voice input',
+    voice_unsupported: 'Your browser does not support audio recording',
+    voice_denied: 'Microphone access was denied',
+    voice_too_short: 'Recording was too short',
+    voice_transcribing: 'Transcribing…',
+    voice_failed: (vars) => `Transcription failed: ${vars.message}`,
+    voice_provider_required: 'Voice input requires an OpenAI- or Groq-compatible provider in Settings.',
+
+    ui_scale: 'Text size',
+    ui_scale_hint: 'Scales the overall text and control size in the app.',
+    smaller: 'Smaller',
+    larger: 'Larger',
+    reset: 'Reset',
+    system_section: 'Host system info',
+    redetect: 'Re-detect',
+    change_password: 'Change password',
+    current_password: 'Current password',
+    new_password: 'New password',
+    password_changed: 'Password updated.',
+    err_password_new_short: 'New password is too short',
+    ai_saved: 'AI settings saved.',
+    go_to_chat: 'Go to chat',
+    ph_api_key_openai: 'sk-...',
+    ph_api_key_ollama: 'Optional for Ollama',
+    ph_model: 'e.g. gpt-4.1-mini',
+    ph_base_url_compat: 'e.g. https://api.example.com/v1',
+    ph_base_url_ollama: 'http://localhost:11434/v1 (optional)',
+    ph_base_url_openai: 'Default: https://api.openai.com/v1',
+    ph_base_url_anthropic: 'Default: https://api.anthropic.com',
+    ph_base_url_default: 'Provider default (optional)',
+
+    new_chat: 'New chat',
+    no_chats: 'No conversations yet.',
+    chats: 'Chats',
+    empty_heading: 'Ask me anything — I work like a senior sysadmin',
+    empty_subtext: 'I can run commands, read & write files, install packages, configure services, and ask you for input whenever I need it.',
+    example_disk: 'Check disk usage',
+    example_nginx: 'Install & configure nginx',
+    example_ports: 'List open ports',
+    composer_placeholder: 'Type your request… (Shift+Enter for newline)',
+    composer_hint: 'Aramis can execute shell commands and file operations on this host. It asks for confirmation before destructive actions.',
+    stop: 'Stop',
+    send: 'Send',
+    ai_not_configured_banner: 'AI is not configured yet.',
+    configure: 'Configure',
+    awaiting_input: 'Waiting for your input',
+    your_answer: 'Your answer…',
+    rename_chat: 'Rename chat',
+    new_name: 'New name',
+    confirm_delete_chat: (vars) => `Delete chat “${vars.title}”?`,
+
+    phase_connecting: 'Connecting…',
+    phase_thinking: 'Thinking…',
+    phase_responding: 'Responding…',
+    phase_tool_running: (vars) => `Running ${vars.tool}…`,
+    phase_done: 'Done',
+
+    tool_run_command: 'Run command',
+    tool_read_file: 'Read file',
+    tool_write_file: 'Write file',
+    tool_list_dir: 'List directory',
+    tool_ask_user: 'Ask user',
+    tool_remember: 'Remember',
+    tool_forget: 'Forget',
+
+    data_section: 'Data & memory',
+    db_path: 'Database path',
+    db_size: 'Database size',
+    stat_chats: 'chats',
+    stat_messages: 'messages',
+    stat_memory: 'memories',
+    stat_settings: 'settings',
+    export_db: 'Export database',
+    wipe_data: 'Wipe all data',
+    wipe_data_confirm: 'All chats, messages, and memory will be deleted. Continue?',
+    wipe_data_done: 'Data wiped.',
+    memory_section: 'Long-term memory',
+    memory_empty: 'Nothing remembered yet. The agent saves durably useful info here as it learns it.',
+    memory_key: 'key',
+    memory_value: 'value',
+    memory_kind: 'kind',
+    memory_updated: 'updated',
+    kind_preference: 'preference',
+    kind_fact: 'fact',
+    kind_env: 'env',
+    kind_secret: 'secret',
+    kind_note: 'note',
+    add_memory: 'Add manually',
+    confirm_delete_memory: (vars) => `Delete memory “${vars.key}”?`,
+
+    diagnostics_section: 'Diagnostics',
+    run_tests: 'Run tests',
+    diag_hint: 'Run the checks to verify the server, database, file system, shell, and AI connectivity.',
+    diag_summary: (v) => `${v.passed} passed, ${v.failed} failed${v.skipped ? `, ${v.skipped} skipped` : ''} of ${v.total}`,
+    diag_running: 'Running…',
+    diag_server: 'Server & runtime',
+    diag_db_read: 'Database read',
+    diag_db_write: 'Database write',
+    diag_system_detect: 'System detection',
+    diag_file_io: 'File I/O',
+    diag_shell: 'Shell exec',
+    diag_memory: 'Long-term memory',
+    diag_ai_config: 'AI configured',
+    diag_ai_ping: 'AI connectivity',
+
+    args: 'Args',
+    result: 'Result',
+    exit_code: 'exit code',
+    killed: '(killed)',
+    running: 'Running',
+    done_state: 'Done',
+    failed_state: 'Failed',
+  },
+};
+
+function detectInitial() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored === 'fa' || stored === 'en') return stored;
+  const nav = (navigator.language || 'en').toLowerCase();
+  return nav.startsWith('fa') ? 'fa' : 'en';
+}
+
+export const locale = ref(detectInitial());
+
+export function applyLocale(l) {
+  if (l !== 'fa' && l !== 'en') return;
+  locale.value = l;
+  localStorage.setItem(STORAGE_KEY, l);
+  document.documentElement.lang = l;
+  document.documentElement.dir = l === 'fa' ? 'rtl' : 'ltr';
+}
+
+export function t(key, vars) {
+  // Touch locale.value so Vue tracks the dependency when called in templates.
+  const l = locale.value;
+  const entry = dict[l]?.[key];
+  const fallback = dict.en[key];
+  const v = entry ?? fallback ?? key;
+  return typeof v === 'function' ? v(vars || {}) : v;
+}
+
+export function useI18n() {
+  return { t, locale, setLocale: applyLocale };
+}
+
+// Apply on module load
+applyLocale(locale.value);

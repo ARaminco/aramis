@@ -1,0 +1,107 @@
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 5.5%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 18%;
+    --input: 240 3.7% 18%;
+    --ring: 240 4.9% 83.9%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html, body { height: 100%; }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  html[lang="en"] body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  pre, code, kbd, samp {
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: embed;
+  }
+  /* Prevent iOS Safari from zooming form inputs */
+  @media (max-width: 768px) {
+    input, textarea, select { font-size: 16px !important; }
+  }
+  button { -webkit-user-select: none; user-select: none; }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+}
+
+/* Markdown content inside chat messages */
+.prose-chat {
+  @apply text-sm leading-relaxed;
+}
+.prose-chat h1, .prose-chat h2, .prose-chat h3 { @apply font-semibold mt-3 mb-2; }
+.prose-chat h1 { @apply text-lg; }
+.prose-chat h2 { @apply text-base; }
+.prose-chat h3 { @apply text-sm; }
+.prose-chat p { @apply my-2; }
+.prose-chat ul { @apply list-disc pr-5 my-2; }
+.prose-chat ol { @apply list-decimal pr-5 my-2; }
+.prose-chat code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-[0.85em] font-mono;
+}
+.prose-chat pre {
+  @apply bg-muted/60 rounded-md p-3 my-2 overflow-x-auto text-xs;
+}
+.prose-chat pre code { @apply bg-transparent p-0; }
+.prose-chat a { @apply underline; }
+.prose-chat blockquote { @apply border-r-2 border-border pr-3 my-2 text-muted-foreground; }
+.prose-chat table { @apply my-2 border-collapse text-xs; }
+.prose-chat th, .prose-chat td { @apply border border-border px-2 py-1; }
