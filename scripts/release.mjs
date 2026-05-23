@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const PKG_FILE = path.join(ROOT, 'package.json');
+const LOCK_FILE = path.join(ROOT, 'package-lock.json');
 const CHANGELOG_FILE = path.join(ROOT, 'CHANGELOG.md');
 
 const args = process.argv.slice(2);
@@ -258,6 +259,15 @@ async function main() {
     pkg.version = newVersion;
     await writeFile(PKG_FILE, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
     console.log(`${dim('✓')} package.json bumped to ${newVersion}`);
+
+    const lockRaw = await readFile(LOCK_FILE, 'utf8').catch(() => '');
+    if (lockRaw) {
+      const lock = JSON.parse(lockRaw);
+      lock.version = newVersion;
+      if (lock.packages?.['']) lock.packages[''].version = newVersion;
+      await writeFile(LOCK_FILE, JSON.stringify(lock, null, 2) + '\n', 'utf8');
+      console.log(`${dim('✓')} package-lock.json bumped to ${newVersion}`);
+    }
   }
 
   // Build

@@ -1,157 +1,171 @@
-# Aramis
+<div align="center">
+  <img src="electron/icon.svg" width="96" alt="Aramis logo" />
 
-یک ایجنت هوش مصنوعی وب‌محور برای مدیریت سرور و سیستم — جایگزین CLI با یک چت حرفه‌ای DevOps. روی هر سیستم‌عاملی (Linux / macOS / Windows) کار می‌کنه و از همه‌ی AI providerهای مهم پشتیبانی می‌کنه (OpenAI, Anthropic, Groq, OpenRouter, Together, Ollama لوکال).
+  # Aramis
 
-> Web-based AI agent for sysadmin/DevOps work. Chat in any language; Aramis plans → investigates → executes → verifies, just like a senior engineer at a terminal.
+  **A local-first AI command center for DevOps, sysadmin work, and code operations.**
 
----
+  با Aramis به جای جنگیدن با ترمینال، با سیستم خود چت کنید: برنامه‌ریزی، بررسی، اجرا، و اعتبارسنجی در یک محیط دسکتاپ/وب امن و شفاف.
 
-## امکانات / Features
+  [![CI](https://github.com/aliasgharramin/aramis/actions/workflows/ci.yml/badge.svg)](https://github.com/aliasgharramin/aramis/actions/workflows/ci.yml)
+  [![Release](https://github.com/aliasgharramin/aramis/actions/workflows/release.yml/badge.svg)](https://github.com/aliasgharramin/aramis/actions/workflows/release.yml)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-0f172a.svg)](LICENSE)
+  [![Node.js 20+](https://img.shields.io/badge/Node.js-20+-16a34a.svg)](https://nodejs.org/)
+  [![Electron](https://img.shields.io/badge/Desktop-Electron-38bdf8.svg)](https://www.electronjs.org/)
 
-### چت ایجنتی (Agentic chat)
-- **Plan → Investigate → Execute → Verify** — قبل از هر کار یه پلن می‌ده، مرحله‌مرحله اجرا می‌کنه، و در پایان verify می‌کنه. **هیچ‌وقت** قبل از دیدن نتیجه‌ی واقعی tool جواب نمی‌ده.
-- **Streaming زنده** — متن مدل، tool calls، stdout/stderr دستورات همه به‌صورت live در UI میان.
-- **Tool calls شفاف** — هر دستور با اسم/پارامترها/exit code/خروجی در یک کارت قابل‌بازکردن نمایش داده می‌شه (سبک ترمینال واقعی).
-- **پرسش پارامتر** (`ask_user`) — اگر مدل وسط کار به ورودی نیاز داشت، loop متوقف می‌شه و UI input نشون می‌ده.
-- **چند چت همزمان** + هیستوری + ادامه‌ی کار قبلی با کل context.
-
-### ورودی صوتی
-- **یک دکمه‌ی میکروفون** کنار composer — کلیک می‌کنی، صحبت می‌کنی، دوباره کلیک می‌کنی، متن transcribe شده در input ظاهر می‌شه.
-- **هر زبانی** — از Whisper استفاده می‌کنه که به‌صورت خودکار از بین ۹۹+ زبان تشخیص می‌ده.
-- از OpenAI Whisper (`whisper-1`) یا Groq Whisper (`whisper-large-v3-turbo` — رایگان) استفاده می‌کنه.
-
-### حالت تأیید دستورات (Auto / Manual)
-- **Auto**: همه‌ی دستورات بدون پرسش اجرا می‌شن (پیش‌فرض).
-- **Manual**: قبل از هر `run_command` / `read_file` / `write_file` / `list_dir`، یه دکمه‌ی Approve/Deny روی کارت ابزار ظاهر می‌شه.
-
-### حافظه‌ی بلندمدت (Long-term memory)
-- ایجنت می‌تونه ترجیحات و factهای ثابت رو در DB ذخیره کنه (`remember(key, value, kind)`)، در چت‌های بعدی هم به یاد می‌مونن.
-- نوع‌بندی: `preference` / `fact` / `env` / `secret` / `note`.
-- لیست/حذف از Settings → حافظه‌ی بلندمدت.
-
-### تست‌های سلامت داخلی (Diagnostics)
-- ۹ تست در Settings → «اجرای تست‌ها»: سرور، DB read/write، تشخیص سیستم، File I/O، shell، حافظه، AI config، و **یه ping واقعی** به AI provider (با latency و خطای دقیق).
-
-### چندارائه‌دهنده (Multi-provider)
-- OpenAI / Anthropic / Groq / OpenRouter / Together / Ollama لوکال / هر OpenAI-compatible
-- timeout قابل تنظیم (10–600 ثانیه)
-- خطاهای شبکه با پیام‌های واضح: ECONNREFUSED، 401، 403، 404، 429، timeout — هر کدوم با راهنمای راه‌حل
-- log کامل خطاها در server console
-
-### UI/UX
-- **ریسپانسیو ۱۰۰٪** — drawer sidebar روی موبایل، sticky composer با safe-area iPhone، dynamic viewport (`100dvh`).
-- **دو زبانه** — فارسی + انگلیسی، swap خودکار `<html dir>` و `<html lang>`.
-- **Dark/Light mode** + **UI scale** (80%–150% بزرگ‌نمایی متن، شامل همه‌چیز).
-- **Markdown rendering** در پیام‌ها (هد، لیست، code blocks با syntax highlighting).
-- **shadcn-style** UI با [reka-ui](https://reka-ui.com/) و Tailwind.
-
-### Data
-- SQLite لوکال (`server/data/aramis.db`) با better-sqlite3 + WAL.
-- جدول‌ها: `settings`, `chats`, `messages`, `memory`.
-- **Export کامل DB** و **wipe data** از Settings.
+  [Features](#features) · [Quick Start](#quick-start) · [Desktop Builds](#desktop-builds) · [Deploy](#deploy) · [Security](#security)
+</div>
 
 ---
 
-## معماری
+## What Is Aramis?
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         web (Vue 3 + Vite)                  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │  Setup   │  │  Login   │  │   Chat   │  │ Settings │    │
-│  └──────────┘  └──────────┘  └────┬─────┘  └──────────┘    │
-│                  Pinia stores ◀───┘   shadcn/Tailwind UI   │
-└────────────────────────┬────────────────────────────────────┘
-                         │ HTTP + SSE + multipart (voice)
-┌────────────────────────▼────────────────────────────────────┐
-│                    server (Express)                         │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Routes:  /auth  /config  /system  /chats          │   │
-│  │           /data  /diagnostics  /transcribe         │   │
-│  └─────────────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Services:                                          │   │
-│  │   • agent.js     — Plan → Execute loop, ask_user,  │   │
-│  │                    manual approval, memory inject   │   │
-│  │   • ai-provider  — OpenAI/Anthropic/+ unified       │   │
-│  │   • tools.js     — run_command / read / write /     │   │
-│  │                    list_dir / ask_user / remember   │   │
-│  │   • system-info  — OS / shell / pkg-mgr detection   │   │
-│  │   • diagnostics  — 9-check health probe             │   │
-│  └─────────────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  SQLite (better-sqlite3, WAL)                       │   │
-│  │   settings · chats · messages · memory              │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                         │ HTTPS streaming
-                         ▼
-                  AI Provider (OpenAI / Groq / ...)
+Aramis is an AI-powered terminal workspace that runs locally on your machine or server. It combines a bilingual chat UI, a real Express backend, SQLite persistence, transparent tool calls, and optional desktop packaging for macOS, Windows, and Linux.
+
+It is built for people who do infrastructure work and want an assistant that can inspect, reason, execute commands, edit files, manage SSH/FTP/Git workflows, and explain what happened without hiding the dangerous parts.
+
+## Features
+
+- **Agentic workflow**: Plan -> Investigate -> Execute -> Verify before final answers.
+- **Live streaming**: model output, tool calls, stdout, stderr, and exit codes stream into the UI.
+- **Command approval mode**: choose Auto for speed or Manual when every shell/file action must be approved.
+- **Multi-engine chat**: Aramis Agent, Claude Code CLI, and OpenAI Codex CLI can stream into the same conversation interface.
+- **Multi-provider AI**: OpenAI, Anthropic, Groq, OpenRouter, Together, Ollama, and OpenAI-compatible endpoints.
+- **Voice input**: microphone composer powered by Whisper-compatible transcription providers.
+- **Local memory**: long-term preferences, facts, environment notes, and secrets stored in SQLite.
+- **Operations panels**: file explorer, Git panel, SSH/FTP host manager, diagnostics, changelog view, and command palette.
+- **Desktop + web**: Electron app for local desktop use, Express/Vue production server for VPS/self-hosting.
+- **Bilingual UI**: Persian and English with RTL/LTR switching, dark/light themes, and UI scaling.
+
+## Architecture
+
+```text
+Vue 3 + Vite + Tailwind UI
+        |
+        | HTTP, SSE, uploads
+        v
+Express API + agent services
+        |
+        | tools, CLI runners, providers
+        v
+Local shell / filesystem / Git / SSH / FTP / SQLite
 ```
 
----
+Core stack:
 
-## نیازمندی‌ها / Requirements
+- **Frontend**: Vue 3, Vite, Pinia, Tailwind, reka-ui, marked, highlight.js.
+- **Backend**: Express, better-sqlite3, JWT auth, bcrypt, multer, provider adapters.
+- **Desktop**: Electron 33 + electron-builder for DMG, NSIS, and AppImage.
+- **Data**: local SQLite database with WAL mode.
 
-- **Node.js ≥ 20** (تست‌شده روی v22)
-- **npm ≥ 9**
-- یکی از این provider ها:
-  - **OpenAI** (`gpt-4.1-mini`, `gpt-4o`, …) — کلید از platform.openai.com
-  - **Groq** — رایگان و خیلی سریع، روی ایران معمولاً باز — console.groq.com
-  - **OpenRouter** — proxy واحد برای همه — openrouter.ai
-  - **Anthropic** (Claude family) — console.anthropic.com
-  - **Ollama** لوکال — هیچ کلیدی لازم نداره، بدون اینترنت
+## Quick Start
 
----
+Requirements:
 
-## اجرای سریع (Development)
+- Node.js **20+**. Node.js 22 is recommended.
+- npm **9+**.
+- One AI provider key, or a local Ollama setup.
 
 ```bash
-# نصب همه‌ی dependencies (root + server + web)
+git clone https://github.com/aliasgharramin/aramis.git
+cd aramis
 npm run install:all
-
-# اجرای dev mode — server روی 5174، Vite روی 5173 با proxy
 npm run dev
 ```
 
-سپس مرورگر رو روی http://localhost:5173 باز کنید:
-1. اولین بازدید → **Setup**: یک رمز عبور تعیین کنید
-2. خودکار به **Settings** هدایت می‌شید → provider و model و API key رو وارد کنید
-3. **اجرای تست‌ها** رو بزنید تا مطمئن بشید همه‌چیز سالمه
-4. به **Chat** برید و شروع کنید
+Open `http://localhost:5173`.
 
----
+First run flow:
 
-## ساخت نسخه‌ی production (Build)
+1. Create the local admin password.
+2. Open Settings and configure provider, model, and API key.
+3. Run Diagnostics.
+4. Start a chat and choose Aramis, Claude Code, or Codex mode.
+
+## Production Web Server
 
 ```bash
-# ۱) نصب
 npm run install:all
-
-# ۲) build فرانت‌اند (خروجی در web/dist/)
 npm run build
-
-# ۳) اجرای production server (روی پورت 5174 — همون پورت SPA رو هم serve می‌کنه)
-npm --prefix server start
-# یا با env سفارشی:
-PORT=8080 JWT_SECRET="$(openssl rand -hex 32)" npm --prefix server start
+JWT_SECRET="$(openssl rand -hex 32)" npm --prefix server start
 ```
 
-در production، `server/src/index.js` خودش `web/dist/` رو به‌عنوان static serve می‌کنه — همه‌چیز روی یک پورت. حالا فقط http://localhost:5174 رو باز کنید.
+Default production URL is `http://localhost:5174`. The Express server serves the built SPA from `web/dist`.
 
-### اجرا با pm2 (recommended for VPS)
+Useful environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `5174` | Express server port. |
+| `JWT_SECRET` | development fallback | Required strong secret for production. |
+| `DB_PATH` | `server/data/aramis.db` | SQLite database path. |
+| `CORS_ORIGIN` | unset | Optional allowed browser origin. |
+| `ARAMIS_FS_ROOT` | unset | Optional filesystem boundary for file browsing. |
+
+## Desktop Builds
+
+Local desktop packaging:
 
 ```bash
-npm i -g pm2
-cd /path/to/aramis
-npm run install:all && npm run build
-pm2 start server/src/index.js --name aramis --env production
-pm2 save && pm2 startup
+npm run electron:build:mac
+npm run electron:build:win
+npm run electron:build:linux
 ```
 
-### اجرا با systemd
+Outputs are written to `dist-electron/`.
 
-`/etc/systemd/system/aramis.service`:
+GitHub release builds are configured in `.github/workflows/release.yml`:
+
+- Run manually from **Actions -> Build desktop release**.
+- Or push a version tag like `v0.5.2` to build all release artifacts.
+- Tag builds attach generated installers to a GitHub Release.
+
+## GitHub Publishing Setup
+
+This repository is configured for personal GitHub publishing under:
+
+```text
+https://github.com/aliasgharramin/aramis
+```
+
+Initial push:
+
+```bash
+git remote add origin git@github.com:aliasgharramin/aramis.git
+git push -u origin master
+```
+
+Create and publish a release tag after running the local release workflow:
+
+```bash
+git tag v$(node -p "require('./package.json').version")
+git push origin master --tags
+```
+
+Project automation included:
+
+- CI build on `master`, `main`, and pull requests.
+- Manual/tagged desktop release workflow.
+- Dependabot for npm and GitHub Actions.
+- Issue templates and pull request template.
+- MIT license and security policy.
+
+## Release Workflow
+
+This project intentionally keeps releases local-first. After meaningful changes, run:
+
+```bash
+npm run release -- "One-line summary of what changed"
+```
+
+The command updates `CHANGELOG.md`, bumps the root package version, rebuilds the web app, stages changes, and creates one release commit.
+
+See [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md) for the mandatory agent rules.
+
+## Deploy With systemd
+
+Example unit:
+
 ```ini
 [Unit]
 Description=Aramis
@@ -162,7 +176,7 @@ Type=simple
 User=aramis
 WorkingDirectory=/opt/aramis
 Environment="PORT=5174"
-Environment="JWT_SECRET=put-a-long-random-string-here"
+Environment="JWT_SECRET=replace-with-a-long-random-secret"
 ExecStart=/usr/bin/node server/src/index.js
 Restart=on-failure
 
@@ -171,93 +185,41 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-systemctl daemon-reload && systemctl enable --now aramis
+sudo systemctl daemon-reload
+sudo systemctl enable --now aramis
 ```
 
----
+Put Caddy, nginx, or another reverse proxy in front of Aramis and serve it only over HTTPS.
 
-## متغیرهای محیطی
+## Security
 
-| نام | پیش‌فرض | شرح |
-|---|---|---|
-| `PORT` | `5174` | پورت Express |
-| `JWT_SECRET` | dev secret | **در production حتماً تغییر بدید** |
-| `DB_PATH` | `server/data/aramis.db` | مسیر فایل SQLite |
+Aramis is powerful because it can operate your machine. Treat it like privileged infrastructure software.
 
----
+- Change `JWT_SECRET` in production.
+- Keep the server behind HTTPS and a trusted reverse proxy.
+- Use Manual approval on shared machines or sensitive servers.
+- Do not expose raw development ports to the public internet.
+- Review tool calls before approving file writes or shell commands.
+- Report private vulnerabilities through https://aramin.co.
 
-## ساختار پروژه
+More details: [SECURITY.md](SECURITY.md).
 
-```
+## Repository Layout
+
+```text
 aramis/
-├── package.json              # root scripts (install:all, dev, build, start)
-├── README.md
-├── server/
-│   ├── package.json          # express, better-sqlite3, openai, anthropic, multer, ...
-│   └── src/
-│       ├── index.js          # Express entry + static SPA serving
-│       ├── db.js             # SQLite schema + helpers (settings/chats/messages/memory)
-│       ├── middleware/auth.js
-│       ├── routes/
-│       │   ├── auth.js       # setup/login/change-password
-│       │   ├── config.js     # AI config CRUD
-│       │   ├── system.js     # OS detection
-│       │   ├── chats.js      # CRUD + SSE /stream + approval/ask flow
-│       │   ├── data.js       # stats / export / wipe / memory CRUD
-│       │   ├── diagnostics.js
-│       │   └── transcribe.js # Whisper voice → text
-│       └── services/
-│           ├── agent.js
-│           ├── ai-provider.js
-│           ├── tools.js
-│           ├── system-info.js
-│           └── diagnostics.js
-└── web/
-    ├── package.json          # vue, vite, tailwind, reka-ui, lucide, marked, ...
-    └── src/
-        ├── main.js
-        ├── App.vue
-        ├── router.js
-        ├── style.css         # Tailwind + RTL + Vazirmatn
-        ├── lib/
-        │   ├── api.js        # fetch wrapper + SSE
-        │   ├── i18n.js       # fa + en
-        │   ├── voice.js      # MediaRecorder + transcription
-        │   ├── ui-scale.js   # font-size scaling
-        │   └── utils.js
-        ├── stores/
-        │   ├── auth.js
-        │   └── chat.js
-        ├── components/
-        │   ├── ui/           # Button, Input, Card, Dialog, ...
-        │   ├── MessageContent.vue
-        │   └── ToolCallCard.vue
-        └── views/
-            ├── Setup.vue
-            ├── Login.vue
-            ├── Settings.vue
-            └── Chat.vue
+├── electron/          # Electron main process and icons
+├── server/src/        # Express API, routes, services, SQLite helpers
+├── web/src/           # Vue app, stores, components, views, i18n
+├── scripts/           # Release automation
+├── .github/           # CI, release workflow, templates, Dependabot
+├── CLAUDE.md          # Agent rules and release policy
+├── AGENTS.md          # Mirror for Codex/Cursor/Gemini-compatible agents
+└── README.md
 ```
 
----
+## Author
 
-## امنیت / Security
+Built by **[Aliasghar Ramin](https://aramin.co)**.
 
-- رمز عبور با **bcrypt** (12 round) hash می‌شه و در SQLite ذخیره می‌شه — هرگز در plain.
-- درخواست‌های API با **JWT** (HS256، expire 7d) احراز می‌شن.
-- API keys مدل‌ها در DB ذخیره می‌شن و در پاسخ‌های `GET /api/config/ai` به‌صورت `••••XXXX` redact می‌شن.
-- **`JWT_SECRET` رو در production عوض کنید** (یه رشته‌ی تصادفی 64+ کاراکتری).
-- Aramis روی همین میزبان دستور shell اجرا می‌کنه — پشت یک reverse proxy (nginx/Caddy) و فقط با HTTPS deploy کنید. حالت Manual approval رو روشن کنید اگر کلیدها در دست افراد متعدد هست.
-
----
-
-## ساخته‌شده توسط
-
-**[Aliasghar Ramin](https://aramin.co)** — Full-stack developer
-🌐 [aramin.co](https://aramin.co)
-
-اگر این پروژه براتون مفید بود، یه ⭐ بزنید یا در سایت بالا با من تماس بگیرید.
-
-## License
-
-MIT © 2026 Aliasghar Ramin
+If Aramis helps your workflow, star the repository and open focused issues for bugs or feature requests.

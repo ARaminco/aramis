@@ -1,0 +1,93 @@
+name: Build desktop release
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - mac
+          - windows
+          - linux
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS DMG
+            os: macos-14
+            platform: mac
+            script: electron:build:mac
+            artifacts: dist-electron/*.{dmg,zip,blockmap,yml}
+          - name: Windows NSIS
+            os: windows-latest
+            platform: windows
+            script: electron:build:win
+            artifacts: dist-electron/*.{exe,blockmap,yml}
+          - name: Linux AppImage
+            os: ubuntu-latest
+            platform: linux
+            script: electron:build:linux
+            artifacts: dist-electron/*.{AppImage,blockmap,yml}
+
+    steps:
+      - name: Skip unrequested platform
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.platform != 'all' && github.event.inputs.platform != matrix.platform
+        run: echo "Skipping ${{ matrix.platform }}"
+
+      - name: Checkout
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Linux packaging dependencies
+        if: matrix.platform == 'linux' && (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform)
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools rpm
+
+      - name: Install root dependencies
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+        run: npm ci
+
+      - name: Install web dependencies
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+        run: npm --prefix web ci
+
+      - name: Build desktop app
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+        run: npm run ${{ matrix.script }}
+
+      - name: Upload artifacts
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+        uses: actions/upload-artifact@v4
+        with:
+          name: aramis-${{ matrix.platform }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifacts }}
+          generate_release_notes: true

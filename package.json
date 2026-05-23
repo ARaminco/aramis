@@ -1,13 +1,13 @@
 {
   "name": "aramis",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
-  "description": "AI-powered web terminal agent for sysadmin/devops — chat instead of CLI",
+  "description": "AI-powered desktop and web terminal agent for sysadmin and DevOps workflows.",
   "author": {
     "name": "Aliasghar Ramin",
     "url": "https://aramin.co"
   },
-  "homepage": "https://aramin.co",
+  "homepage": "https://github.com/aliasgharramin/aramis#readme",
   "license": "MIT",
   "main": "electron/main.js",
   "scripts": {
@@ -138,5 +138,25 @@
       "icon": "electron/icon.png",
       "category": "Development"
     }
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aliasgharramin/aramis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aliasgharramin/aramis/issues"
+  },
+  "keywords": [
+    "ai-agent",
+    "devops",
+    "sysadmin",
+    "terminal",
+    "electron",
+    "vue",
+    "sqlite",
+    "openai",
+    "anthropic",
+    "codex",
+    "claude"
+  ]
 }

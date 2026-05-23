@@ -1,0 +1,42 @@
+name: Bug report
+description: Report something that is broken or unsafe in Aramis.
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: List exact steps, commands, screenshots, or logs.
+      placeholder: |
+        1. Open ...
+        2. Configure ...
+        3. Run ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Aramis version
+      placeholder: v0.5.1
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Desktop app
+        - Web/server mode
+        - Development mode
+        - Other
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS, Node.js version, AI provider, model, shell.

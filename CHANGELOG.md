@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.5.2] - 2026-05-23
+
+- Prepared GitHub publishing configuration and refreshed README
+
 ## [0.5.1] - 2026-05-23
 
 - Ignore local AI tool configs (.claude, .codex, .cursor, .aider, .continue, .copilot, .cline, .windsurf, .codeium, .gemini, etc.) in .gitignore
