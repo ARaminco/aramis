@@ -25,14 +25,31 @@
 
 ## Download Aramis
 
-Aramis is available as a desktop AI terminal app and as a self-hosted web app.
+Aramis ships in **three flavours**: an `npm`-installable CLI for anyone with Node.js, a desktop app for macOS / Windows / Linux, and a one-line server installer.
+
+### Install with npm (any OS with Node 20+)
+
+```bash
+npm install -g @araminco/aramis
+aramis                       # opens http://127.0.0.1:5174 in your browser
+```
+
+Or, no install — just run once:
+
+```bash
+npx @araminco/aramis
+```
+
+Data (SQLite DB + JWT secret) lives under `~/.aramis/`. Override with `--data-dir <path>` or `ARAMIS_HOME=…`. Other flags: `--port <n>`, `--no-open`. See `aramis --help`.
+
+Requirements: Node.js **20+**. On Linux you may need `python3` / `gcc` / `make` so native modules (`bcrypt`, `better-sqlite3`, `node-pty`) can fall back to building from source if no prebuild matches your libc/arch.
 
 ### Download For macOS
 
 | Platform | Recommended For | Download |
 | --- | --- | --- |
-| **macOS Apple Silicon** | M1, M2, M3, M4 Macs | [Download Aramis v0.6.0 ARM64 DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.6.0-arm64.dmg) |
-| **macOS Intel** | Intel-based Macs | [Download Aramis v0.6.0 Intel DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.6.0.dmg) |
+| **macOS Apple Silicon** | M1, M2, M3, M4 Macs | [Download Aramis v0.6.1 ARM64 DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.6.1-arm64.dmg) |
+| **macOS Intel** | Intel-based Macs | [Download Aramis v0.6.1 Intel DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.6.1.dmg) |
 | **All releases** | Older versions and release notes | [Open GitHub Releases](https://github.com/ARaminco/aramis/releases) |
 
 > If direct DMG links return 404, the latest GitHub Release is still being built. Open the [Releases page](https://github.com/ARaminco/aramis/releases) and download the newest macOS asset after the build finishes.
@@ -284,7 +301,7 @@ A tag push builds macOS, Windows, and Linux installers and attaches them to the 
 
 ## Release History
 
-Current local version: **v0.6.0**.
+Current local version: **v0.6.1**.
 
 Recent project milestones:
 

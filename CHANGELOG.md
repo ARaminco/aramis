@@ -11,6 +11,13 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.6.1] - 2026-05-23
+
+- **npm package** — Aramis is now publishable as `@araminco/aramis`. `npm install -g @araminco/aramis` lands an `aramis` binary on the user's PATH; running it boots the embedded Express server, persists JWT + SQLite under `~/.aramis/`, and opens the browser. `npx @araminco/aramis` works zero-install. Flags: `--port`, `--no-open`, `--data-dir`, `--version`, `--help`. Env: `PORT`, `JWT_SECRET`, `DB_PATH`, `ARAMIS_HOME`.
+- `scripts/publish-npm.mjs` + `npm run publish:npm` — assembles a trimmed publish bundle (server/, web/dist/, bin/, only runtime deps; no Electron-builder cruft) into a temp dir and `npm publish --access public`. Dry-run mode lists the exact files that would ship. Honors `--otp`, `--tag`, `--keep`.
+- `.github/workflows/release.yml` — pinned Python 3.11 before `npm ci` so node-pty's electron-rebuild can run on macos-14 and windows-latest (Python 3.12 dropped `distutils`, which the bundled node-gyp still imports). Fixes the v0.6.0 macOS/Windows desktop build failures.
+- Add npm distribution: bin/aramis.mjs CLI, publish-npm.mjs (builds + publishes @araminco/aramis), Python 3.11 pin in release.yml to fix node-pty rebuild on macOS/Windows
+
 ## [0.6.0] - 2026-05-23
 
 - **Integrated terminal** — full-featured PTY-backed shell inside the chat, accessible via `⌘T` or the terminal button in the header. Backed by `node-pty` on the server and `xterm.js` in the browser, wired over a JWT-authenticated WebSocket (`/api/terminal`) with idle / heartbeat / 16-session caps. Persists across panel toggles, auto-reconnects once on accidental disconnect, follows light/dark theme, ships full-screen toggle, restart, and clear-screen controls.

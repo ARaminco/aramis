@@ -66,6 +66,16 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Python 3.12 removed `distutils`, which node-gyp's bundled gyp (used by
+      # node-pty's electron-rebuild step) still imports. macos-14 and
+      # windows-latest both ship Python 3.12+. Pinning 3.11 is the smallest
+      # fix that lets the existing rebuild path keep working unchanged.
+      - name: Setup Python (for node-gyp / distutils)
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install Linux packaging dependencies
         if: matrix.platform == 'linux' && (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform)
         run: sudo apt-get update && sudo apt-get install -y libarchive-tools rpm
