@@ -33,17 +33,22 @@ jobs:
             os: macos-14
             platform: mac
             script: electron:build:mac
-            artifacts: dist-electron/*.{dmg,zip,blockmap,yml}
+            artifacts: |
+              dist-electron/*.dmg
+              dist-electron/*.dmg.blockmap
           - name: Windows NSIS
             os: windows-latest
             platform: windows
             script: electron:build:win
-            artifacts: dist-electron/*.{exe,blockmap,yml}
+            artifacts: |
+              dist-electron/*.exe
+              dist-electron/*.exe.blockmap
           - name: Linux AppImage
             os: ubuntu-latest
             platform: linux
             script: electron:build:linux
-            artifacts: dist-electron/*.{AppImage,blockmap,yml}
+            artifacts: |
+              dist-electron/*.AppImage
 
     steps:
       - name: Skip unrequested platform

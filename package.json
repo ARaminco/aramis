@@ -1,6 +1,6 @@
 {
   "name": "aramis",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "description": "AI-powered desktop and web terminal agent for sysadmin and DevOps workflows.",
   "author": {
