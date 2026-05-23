@@ -67,12 +67,24 @@ async function loadAll() {
   try {
     const r = await api.cliInstallOptions(tool.value);
     installOptions.value = r;
+    // Only auto-select managers that are actually on PATH. If none are
+    // detected, leave installManager empty so the Install button stays
+    // disabled and the user sees what's missing.
     const firstAvailable = (r.options || []).find((o) => o.available);
-    installManager.value = firstAvailable?.id || (r.options?.[0]?.id || '');
+    installManager.value = firstAvailable?.id || '';
   } catch { installOptions.value = null; }
   // Saved config
   await loadConfig();
 }
+
+const selectedManagerAvailable = computed(() => {
+  if (!installManager.value || !installOptions.value) return false;
+  return !!installOptions.value.options.find((o) => o.id === installManager.value)?.available;
+});
+const noManagersAvailable = computed(() => {
+  if (!installOptions.value) return false;
+  return !installOptions.value.options.some((o) => o.available);
+});
 
 async function loadConfig() {
   cfgMsg.value = '';
@@ -179,30 +191,28 @@ watch(() => props.open, (v) => { if (v) { tool.value = props.initialTool; tab.va
   <Dialog :open="open" :title="t('cli_manager_title')" @update:open="(v) => emit('update:open', v)" size="lg">
     <div class="space-y-3 -mt-1">
       <!-- Tool picker -->
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <button
           v-for="x in TOOLS" :key="x.id"
           type="button"
           @click="tool = x.id; tab = 'overview'"
           :class="[
-            'rounded-lg border p-3 text-start transition flex items-start gap-2.5',
+            'rounded-lg border p-3 text-start transition flex flex-col gap-1.5',
             tool === x.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent',
           ]"
         >
-          <component :is="x.icon" class="h-4 w-4 text-primary mt-0.5 shrink-0" />
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="text-sm font-medium truncate">{{ x.label }}</span>
-              <Badge
-                v-if="detected"
-                :variant="detected.find((d) => d.id === x.id)?.installed ? 'success' : 'outline'"
-                class="text-[9px] px-1.5 py-0"
-              >
-                {{ detected.find((d) => d.id === x.id)?.installed ? t('installed') : t('not_installed') }}
-              </Badge>
-            </div>
-            <div class="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{{ t(x.blurb) }}</div>
+          <div class="flex items-center gap-2">
+            <component :is="x.icon" class="h-4 w-4 text-primary shrink-0" />
+            <span class="text-sm font-medium flex-1 min-w-0">{{ x.label }}</span>
           </div>
+          <Badge
+            v-if="detected"
+            :variant="detected.find((d) => d.id === x.id)?.installed ? 'success' : 'outline'"
+            class="text-[9px] px-1.5 py-0 whitespace-nowrap self-start"
+          >
+            {{ detected.find((d) => d.id === x.id)?.installed ? t('installed') : t('not_installed') }}
+          </Badge>
+          <div class="text-[11px] text-muted-foreground leading-snug">{{ t(x.blurb) }}</div>
         </button>
       </div>
 
@@ -287,28 +297,32 @@ watch(() => props.open, (v) => { if (v) { tool.value = props.initialTool; tab.va
         <template v-else>
           <div class="space-y-2">
             <Label>{{ t('cli_install_manager') }}</Label>
-            <div class="grid grid-cols-2 gap-1.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               <button
                 v-for="opt in installOptions.options" :key="opt.id"
                 type="button"
                 :disabled="!opt.available || installRunning"
                 @click="installManager = opt.id"
                 :class="[
-                  'rounded-md border p-2 text-start text-xs transition flex items-center gap-2',
-                  installManager === opt.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent',
+                  'rounded-md border p-2 text-start text-xs transition flex items-center gap-2 min-w-0',
+                  installManager === opt.id && opt.available ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent',
                   (!opt.available || installRunning) && 'opacity-50 cursor-not-allowed hover:bg-transparent',
                 ]"
               >
-                <Check v-if="installManager === opt.id" class="h-3 w-3 text-primary" />
+                <Check v-if="installManager === opt.id && opt.available" class="h-3 w-3 text-primary shrink-0" />
                 <span class="flex-1 truncate">{{ opt.name }}</span>
-                <Badge v-if="!opt.available" variant="outline" class="text-[9px]">not on PATH</Badge>
+                <Badge v-if="!opt.available" variant="outline" class="text-[9px] whitespace-nowrap shrink-0">not on PATH</Badge>
               </button>
             </div>
-            <p class="text-[10px] text-muted-foreground leading-snug">{{ t('cli_install_hint') }}</p>
+            <p v-if="noManagersAvailable" class="text-[11px] text-amber-500 leading-snug flex items-start gap-1.5">
+              <AlertTriangle class="h-3 w-3 mt-0.5 shrink-0" />
+              {{ t('cli_install_no_manager') }}
+            </p>
+            <p v-else class="text-[10px] text-muted-foreground leading-snug">{{ t('cli_install_hint') }}</p>
           </div>
 
           <div class="flex items-center gap-2">
-            <Button v-if="!installRunning" size="sm" :disabled="!installManager" @click="startInstall('install')">
+            <Button v-if="!installRunning" size="sm" :disabled="!selectedManagerAvailable" @click="startInstall('install')">
               <Download class="h-3.5 w-3.5" />
               {{ isInstalled ? t('cli_update') : t('cli_install') }}
             </Button>

@@ -10,9 +10,35 @@ const { app, BrowserWindow, Menu, shell, dialog, session } = require('electron')
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
+const { execSync } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
 
 const isDev = !app.isPackaged;
+
+// macOS / Linux GUI apps inherit a stripped-down PATH (just /usr/bin:/bin:/...) so
+// Homebrew, nvm, pnpm-installed binaries are invisible. Source the user's login
+// shell once and merge the result back into our PATH so the embedded server can
+// spawn npm / brew / claude / codex / git / ssh etc. without ENOENT.
+function expandShellPath() {
+  if (process.platform === 'win32') return;
+  try {
+    const shell = process.env.SHELL || '/bin/bash';
+    const out = execSync(`${shell} -ilc 'echo $PATH'`, {
+      encoding: 'utf8',
+      timeout: 4000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (out && out.includes('/')) {
+      const seen = new Set();
+      const merged = []
+        .concat((process.env.PATH || '').split(':'), out.split(':'))
+        .filter((p) => p && !seen.has(p) && (seen.add(p), true))
+        .join(':');
+      process.env.PATH = merged;
+    }
+  } catch { /* shell missing or refused — keep the inherited PATH */ }
+}
+expandShellPath();
 
 // --- Single-instance lock so a second launch focuses the existing window
 const gotLock = app.requestSingleInstanceLock();

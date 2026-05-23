@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-23
+
+- Fix: expand Electron PATH from login shell so npm/brew/pnpm are findable (resolves spawn ENOENT during CLI install); lazy chat creation — no empty placeholder rows in sidebar, no hardcoded Persian default title, title pre-filled from first message; AgentInstallerDialog layout (no truncation, no-wrap badges, install button disabled when no manager on PATH); tighter sidebar item spacing
+
 ## [0.4.0] - 2026-05-23
 
 - In-app installer & configurator for Claude Code / Codex / Gemini CLIs — detects npm/brew/pnpm/yarn, streams live install output, encrypted per-tool API key (auto-inherited from AI provider config), and injects env + model when spawning each CLI; new ⌘I shortcut and ModeSwitcher install/configure buttons

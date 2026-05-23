@@ -24,7 +24,9 @@ chatRouter.get('/', (req, res) => {
 // Create a chat
 chatRouter.post('/', (req, res) => {
   const id = nanoid();
-  const title = (req.body?.title || 'گفتگوی جدید').slice(0, 120);
+  // Default to an empty title — the UI substitutes a locale-aware "New chat"
+  // string and the first user message overrides it via the stream handler.
+  const title = String(req.body?.title || '').slice(0, 120);
   const mode = VALID_MODES.has(req.body?.mode) ? req.body.mode : 'aramis';
   const cwd = req.body?.cwd ? String(req.body.cwd).slice(0, 500) : null;
   const externalSessionId = req.body?.external_session_id ? String(req.body.external_session_id).slice(0, 200) : null;
@@ -183,10 +185,17 @@ chatRouter.post('/:id/stream', (req, res, next) => {
     saveMessage(id, { role: 'user', content });
     writer.send('user_saved', {});
     const count = db.prepare("SELECT COUNT(*) AS c FROM messages WHERE chat_id = ? AND role = 'user'").get(id).c;
+    // Always set the title from the first user message, unless the client
+    // already passed a title hint at create time (we honor whichever produces
+    // a meaningful non-empty title).
     if (count === 1) {
-      const title = content.slice(0, 60).replace(/\s+/g, ' ').trim() || 'گفتگوی جدید';
-      db.prepare('UPDATE chats SET title = ? WHERE id = ?').run(title, id);
-      writer.send('title_update', { title });
+      const existing = db.prepare('SELECT title FROM chats WHERE id = ?').get(id)?.title || '';
+      const fromMessage = content.slice(0, 60).replace(/\s+/g, ' ').trim();
+      const title = existing && existing.trim() ? existing : fromMessage;
+      if (title) {
+        db.prepare('UPDATE chats SET title = ? WHERE id = ?').run(title, id);
+        writer.send('title_update', { title });
+      }
     }
   } else {
     writer.send('error', { message: 'either "content" or "ask_response" is required' });

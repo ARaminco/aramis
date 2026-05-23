@@ -1,6 +1,6 @@
 {
   "name": "aramis",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "AI-powered web terminal agent for sysadmin/devops — chat instead of CLI",
   "author": {

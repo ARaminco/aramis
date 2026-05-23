@@ -103,13 +103,23 @@ export const useChatStore = defineStore('chat', {
     async deleteChat(id) {
       await api.deleteChat(id);
       this.chats = this.chats.filter((c) => c.id !== id);
-      if (this.activeId === id) {
-        this.activeId = null;
-        this.messages = [];
-        this.pendingAsk = null;
-        this.phase = null;
-        this.cliMeta = null;
-      }
+      if (this.activeId === id) this.clearActiveChat();
+    },
+
+    /**
+     * Reset the view to an empty "new chat" state WITHOUT creating a DB row.
+     * The chat is created lazily when the user sends their first message —
+     * this keeps the sidebar from filling up with empty placeholder chats.
+     */
+    clearActiveChat() {
+      this.activeId = null;
+      this.messages = [];
+      this.pendingAsk = null;
+      this.phase = null;
+      this.cliMeta = null;
+      this.activeExternalSessionId = null;
+      this.activeMode = this.composerMode || 'aramis';
+      this.activeCwd = this.composerCwd || '';
     },
 
     pushUser(content) {
@@ -117,7 +127,13 @@ export const useChatStore = defineStore('chat', {
     },
 
     async sendMessage(content) {
-      if (!this.activeId) await this.createChat();
+      if (!this.activeId) {
+        // First message in a freshly cleared "new chat" — create the row now
+        // and pre-fill the title from this message so the sidebar entry never
+        // shows a placeholder.
+        const titleHint = content.slice(0, 60).replace(/\s+/g, ' ').trim();
+        await this.createChat({ title: titleHint });
+      }
       this.pushUser(content);
       await this._stream({ content, mode: this.activeMode || this.composerMode });
     },

@@ -168,8 +168,10 @@ async function openChat(id) {
 }
 
 async function newChat() {
-  const id = await store.createChat();
-  router.replace({ name: 'chat', params: { id } });
+  // Lazy: just clear the view. The actual chat row + title are created on
+  // first message send (see chat store's sendMessage).
+  store.clearActiveChat();
+  router.replace({ name: 'chat' });
   sidebarOpen.value = false;
 }
 
@@ -373,7 +375,7 @@ function fmtCost(usd) {
             v-for="c in pinned" :key="c.id"
             @click="pickChat(c.id)"
             :class="[
-              'group w-full text-start rounded-md px-2.5 py-2 my-0.5 text-sm transition flex items-center gap-2',
+              'group w-full text-start rounded-md px-2 py-1.5 my-px text-[13px] leading-tight transition flex items-center gap-2',
               store.activeId === c.id ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60',
             ]"
           >
@@ -399,7 +401,7 @@ function fmtCost(usd) {
             v-for="c in recent" :key="c.id"
             @click="pickChat(c.id)"
             :class="[
-              'group w-full text-start rounded-md px-2.5 py-2 my-0.5 text-sm transition flex items-center gap-2',
+              'group w-full text-start rounded-md px-2 py-1.5 my-px text-[13px] leading-tight transition flex items-center gap-2',
               store.activeId === c.id ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60',
             ]"
           >

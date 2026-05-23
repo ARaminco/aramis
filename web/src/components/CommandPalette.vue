@@ -34,7 +34,8 @@ const commands = computed(() => {
       title: t('cmd_new_chat'),
       hint: t('cmd_new_chat_hint'),
       icon: Plus,
-      run: async () => { const id = await store.createChat(); router.replace({ name: 'chat', params: { id } }); },
+      // Lazy — clear the view; the DB row is created on first message.
+      run: () => { store.clearActiveChat(); router.replace({ name: 'chat' }); },
     },
     {
       group: 'actions',
@@ -42,11 +43,7 @@ const commands = computed(() => {
       title: t('cmd_new_claude'),
       hint: t('cmd_new_claude_hint'),
       icon: Bot,
-      run: async () => {
-        store.setComposerMode('claude');
-        const id = await store.createChat({ mode: 'claude' });
-        router.replace({ name: 'chat', params: { id } });
-      },
+      run: () => { store.setComposerMode('claude'); store.clearActiveChat(); router.replace({ name: 'chat' }); },
     },
     {
       group: 'actions',
@@ -54,11 +51,7 @@ const commands = computed(() => {
       title: t('cmd_new_codex'),
       hint: t('cmd_new_codex_hint'),
       icon: Cpu,
-      run: async () => {
-        store.setComposerMode('codex');
-        const id = await store.createChat({ mode: 'codex' });
-        router.replace({ name: 'chat', params: { id } });
-      },
+      run: () => { store.setComposerMode('codex'); store.clearActiveChat(); router.replace({ name: 'chat' }); },
     },
     {
       group: 'panels',
