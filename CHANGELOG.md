@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.5.6] - 2026-05-23
+
+- Completed professional GitHub repository profile and community files
+
 ## [0.5.5] - 2026-05-23
 
 - Removed Dependabot automation to keep repository attribution personal

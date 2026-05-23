@@ -29,8 +29,8 @@ Aramis is available as a desktop AI terminal app and as a self-hosted web app.
 
 | Platform | Recommended For | Download |
 | --- | --- | --- |
-| **macOS Apple Silicon** | M1, M2, M3, M4 Macs | [Download Aramis v0.5.4 ARM64 DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.4-arm64.dmg) |
-| **macOS Intel** | Intel-based Macs | [Download Aramis v0.5.4 Intel DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.4.dmg) |
+| **macOS Apple Silicon** | M1, M2, M3, M4 Macs | [Download Aramis v0.5.6 ARM64 DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.6-arm64.dmg) |
+| **macOS Intel** | Intel-based Macs | [Download Aramis v0.5.6 Intel DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.6.dmg) |
 | **All releases** | Older versions and release notes | [Open GitHub Releases](https://github.com/ARaminco/aramis/releases) |
 
 > If direct DMG links return 404, the latest GitHub Release is still being built. Open the [Releases page](https://github.com/ARaminco/aramis/releases) and download the newest macOS asset after the build finishes.
@@ -263,12 +263,14 @@ A tag push builds macOS, Windows, and Linux installers and attaches them to the 
 
 ## Release History
 
-Current local version: **v0.5.4**.
+Current local version: **v0.5.6**.
 
 Recent project milestones:
 
 | Version | Highlights |
 | --- | --- |
+| `v0.5.6` | Completed the GitHub repository profile, support docs, ownership metadata, and polished public presentation. |
+| `v0.5.5` | Removed Dependabot automation to keep repository attribution personal. |
 | `v0.5.4` | SEO-focused README, direct macOS download links, and fixed GitHub Release artifact uploads. |
 | `v0.5.2` | GitHub publishing configuration, CI/release workflows, templates, license, and security policy. |
 | `v0.5.1` | Ignore local AI tool configs and per-user agent folders. |

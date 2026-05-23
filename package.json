@@ -1,8 +1,8 @@
 {
   "name": "aramis",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "private": true,
-  "description": "AI-powered desktop and web terminal agent for sysadmin and DevOps workflows.",
+  "description": "Local-first AI terminal agent for DevOps, sysadmin, SSH, Git, FTP, and desktop automation.",
   "author": {
     "name": "Aliasghar Ramin",
     "url": "https://aramin.co"
@@ -148,15 +148,22 @@
   },
   "keywords": [
     "ai-agent",
+    "terminal",
     "devops",
     "sysadmin",
-    "terminal",
+    "ssh",
+    "ftp",
+    "git",
     "electron",
     "vue",
     "sqlite",
     "openai",
     "anthropic",
     "codex",
-    "claude"
+    "claude-code",
+    "self-hosted",
+    "desktop-app",
+    "automation",
+    "persian"
   ]
 }
