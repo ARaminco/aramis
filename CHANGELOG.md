@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.4.2] - 2026-05-23
+
+- Auto-detect & one-click bootstrap: new path-discover service scans known install locations (Homebrew, nvm, Volta, Herd, asdf, fnm, Volta, etc.) on top of shell PATH expansion — packaged Electron app now finds npm/brew/pnpm even without manual setup; all CLI spawns use absolute resolved paths; bootstrap dialog suggests OS-specific install command (Homebrew on macOS, apt/dnf/pacman/zypper/apk on Linux, winget/choco on Windows) and offers one-click 'Open in Terminal' so sudo prompts work; Re-scan PATH button after the user finishes
+
 ## [0.4.1] - 2026-05-23
 
 - Fix: expand Electron PATH from login shell so npm/brew/pnpm are findable (resolves spawn ENOENT during CLI install); lazy chat creation — no empty placeholder rows in sidebar, no hardcoded Persian default title, title pre-filled from first message; AgentInstallerDialog layout (no truncation, no-wrap badges, install button disabled when no manager on PATH); tighter sidebar item spacing

@@ -66,6 +66,9 @@ export const api = {
   cliGetConfig: (tool) => request(`/cli/config/${encodeURIComponent(tool)}`),
   cliSetConfig: (tool, patch) => request(`/cli/config/${encodeURIComponent(tool)}`, { method: 'PUT', body: JSON.stringify(patch) }),
   cliClearConfig: (tool) => request(`/cli/config/${encodeURIComponent(tool)}`, { method: 'DELETE' }),
+  cliBootstrap: () => request('/cli/bootstrap'),
+  cliOpenTerminal: (command) => request('/cli/open-terminal', { method: 'POST', body: JSON.stringify({ command }) }),
+  cliRefreshPath: () => request('/cli/refresh-path', { method: 'POST' }),
   // Streaming install/uninstall — returns an abort function.
   cliInstallStream(tool, manager, onEvent) {
     return cliStreamPlan('install', tool, manager, onEvent);

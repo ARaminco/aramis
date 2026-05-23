@@ -15,26 +15,15 @@
 //   - 'error'            { message }
 //   - 'done'             {}
 
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { resolveCliRuntime } from './cli-config.js';
+import { findBin, getVersion } from './path-discover.js';
 
-const WHICH = process.platform === 'win32' ? 'where' : 'which';
-
-function safeWhich(bin) {
-  try {
-    const out = execFileSync(WHICH, [bin], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 1500 }).trim();
-    return out.split(/\r?\n/)[0] || null;
-  } catch { return null; }
-}
-
-function safeVersion(bin, args = ['--version']) {
-  try {
-    return execFileSync(bin, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 2500 }).trim().split('\n')[0];
-  } catch { return null; }
-}
+function safeWhich(bin) { return findBin(bin); }
+function safeVersion(bin, args = ['--version']) { return getVersion(bin, args); }
 
 /**
  * Returns a list of supported coding-agent CLIs and whether each is installed.
@@ -191,9 +180,9 @@ function lineReader(stream, onLine) {
 const SEEN_TEXT_BLOCK = new WeakMap();
 
 export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, signal }) {
-  const bin = safeWhich('claude');
+  const bin = findBin('claude');
   if (!bin) {
-    writer.send('error', { message: 'Claude Code CLI (`claude`) was not found in PATH. Install it from https://docs.anthropic.com/claude/code and try again.' });
+    writer.send('error', { message: 'Claude Code CLI (`claude`) was not found. Open the Agent-CLI manager (⌘I) and install it.' });
     writer.send('done', {});
     return { ok: false };
   }
@@ -421,9 +410,9 @@ function claudeResultToAramis(name, text) {
 // detect simple "$ command" patterns and surface them in a tool card.
 
 export async function runCodex({ writer, prompt, cwd, sessionId, model, signal }) {
-  const bin = safeWhich('codex');
+  const bin = findBin('codex');
   if (!bin) {
-    writer.send('error', { message: 'Codex CLI (`codex`) was not found in PATH. Install it from https://github.com/openai/codex and try again.' });
+    writer.send('error', { message: 'Codex CLI (`codex`) was not found. Open the Agent-CLI manager (⌘I) and install it.' });
     writer.send('done', {});
     return { ok: false };
   }

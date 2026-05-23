@@ -7,18 +7,12 @@
 // We run them in series, streaming stdout/stderr live via the caller-supplied
 // onChunk, and resolve with a final { ok, exit_code, killed } summary.
 
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
+import { findBin, getVersion } from './path-discover.js';
 
-const WHICH = process.platform === 'win32' ? 'where' : 'which';
-
-function which(bin) {
-  try {
-    const out = execFileSync(WHICH, [bin], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 1500 }).trim();
-    return out.split(/\r?\n/)[0] || null;
-  } catch { return null; }
-}
+function which(bin) { return findBin(bin); }
 
 // ---- Package-manager detection -----------------------------------------
 
@@ -191,14 +185,17 @@ async function runSteps(steps, onEvent, signal) {
 
 function runStep(step, onEvent, signal) {
   return new Promise((resolve) => {
+    // Resolve the binary to an absolute path so spawn doesn't depend on the
+    // child's PATH (which is often broken inside packaged Electron apps).
+    const resolved = path.isAbsolute(step.cmd) ? step.cmd : (findBin(step.cmd) || step.cmd);
     let child;
     try {
-      child = spawn(step.cmd, step.args, {
+      child = spawn(resolved, step.args, {
         env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (e) {
-      onEvent('output', { stream: 'stderr', text: `failed to spawn ${step.cmd}: ${e.message}\n` });
+      onEvent('output', { stream: 'stderr', text: `failed to spawn ${step.cmd} (tried ${resolved}): ${e.message}\n` });
       return resolve({ ok: false, exit_code: -1, killed: false });
     }
     const abort = () => { try { child.kill('SIGTERM'); } catch {} };

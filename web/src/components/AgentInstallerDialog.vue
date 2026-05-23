@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import {
   Bot, Cpu, Sparkles, Download, Trash2, Check, X, Loader2, AlertTriangle,
   Settings, Eye, EyeOff, Save, ExternalLink, RefreshCw, Wrench, KeyRound, Cog,
+  Terminal, Zap, Copy,
 } from 'lucide-vue-next';
 import { api } from '@/lib/api';
 import { useChatStore } from '@/stores/chat';
@@ -41,6 +42,10 @@ const cfgLoading = ref(false);
 const cfgMsg = ref('');
 const showApiKey = ref(false);
 
+const bootstrap = ref(null);             // OS-aware suggestions when nothing is on PATH
+const bootstrapLoading = ref(false);
+const bootstrapMsg = ref('');
+
 const TOOLS = [
   { id: 'claude', icon: Bot,      label: 'Claude Code',   blurb: 'mode_claude_sub' },
   { id: 'codex',  icon: Cpu,      label: 'OpenAI Codex',  blurb: 'mode_codex_sub' },
@@ -75,6 +80,36 @@ async function loadAll() {
   } catch { installOptions.value = null; }
   // Saved config
   await loadConfig();
+  // Bootstrap suggestions (loaded lazily — only consumed by the bootstrap UI)
+  if (!bootstrap.value) {
+    try { bootstrap.value = await api.cliBootstrap(); }
+    catch { bootstrap.value = null; }
+  }
+}
+
+async function runBootstrap(rec) {
+  if (!rec?.command) return;
+  bootstrapMsg.value = '';
+  bootstrapLoading.value = true;
+  try {
+    const r = await api.cliOpenTerminal(rec.command);
+    if (!r.ok) { bootstrapMsg.value = r.error || 'failed to open terminal'; return; }
+    bootstrapMsg.value = `Opened ${r.terminal || 'terminal'}. Run the command there, then click Re-scan below.`;
+  } catch (e) { bootstrapMsg.value = e.message; }
+  finally { bootstrapLoading.value = false; }
+}
+
+async function rescanPath() {
+  bootstrapLoading.value = true;
+  try {
+    await api.cliRefreshPath();
+    // Reload everything — detection, install options, bootstrap state
+    bootstrap.value = null;
+    await loadAll();
+    emit('changed');
+    bootstrapMsg.value = '';
+  } catch (e) { bootstrapMsg.value = e.message; }
+  finally { bootstrapLoading.value = false; }
 }
 
 const selectedManagerAvailable = computed(() => {
@@ -295,6 +330,62 @@ watch(() => props.open, (v) => { if (v) { tool.value = props.initialTool; tab.va
       <div v-else-if="tab === 'install'" class="space-y-3">
         <div v-if="!installOptions" class="text-xs text-muted-foreground">{{ t('loading') }}</div>
         <template v-else>
+          <!-- Bootstrap card: appears only when no package manager is on PATH.
+               One-click "Run in Terminal" — Aramis opens the user's native
+               terminal app with the official install command pre-typed, so
+               sudo prompts are handled correctly. -->
+          <div
+            v-if="noManagersAvailable && bootstrap"
+            class="rounded-lg border border-amber-500/30 bg-amber-500/[0.04] p-3 space-y-2.5"
+          >
+            <div class="flex items-start gap-2">
+              <Zap class="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium">{{ t('cli_bootstrap_title', { os: bootstrap.os_label }) }}</div>
+                <p class="text-[11px] text-muted-foreground leading-snug mt-0.5">{{ t('cli_bootstrap_blurb') }}</p>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div
+                v-for="rec in bootstrap.recommendations" :key="rec.id"
+                class="rounded-md border border-border bg-card/40 p-2.5 space-y-1.5"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="text-xs font-medium flex-1 min-w-0">{{ rec.label }}</div>
+                  <Badge v-if="rec.requires_sudo" variant="outline" class="text-[9px] whitespace-nowrap">{{ t('cli_bootstrap_sudo') }}</Badge>
+                </div>
+                <p v-if="rec.description" class="text-[11px] text-muted-foreground leading-snug">{{ rec.description }}</p>
+                <div class="rounded bg-black/60 text-[11px] font-mono px-2 py-1.5 overflow-x-auto scrollbar-thin text-zinc-100" dir="ltr">
+                  {{ rec.command }}
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <Button size="sm" :disabled="bootstrapLoading" @click="runBootstrap(rec)">
+                    <Terminal class="h-3.5 w-3.5" /> {{ t('cli_bootstrap_run') }}
+                  </Button>
+                  <CopyButton :text="rec.command" size="sm" :label="t('copy')" variant="ghost" />
+                  <a
+                    v-if="rec.docs"
+                    :href="rec.docs"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+                    dir="ltr"
+                  >
+                    {{ t('docs') }} <ExternalLink class="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-2 pt-1 border-t border-amber-500/20">
+              <p v-if="bootstrapMsg" class="text-[11px] text-amber-500 flex-1 leading-snug">{{ bootstrapMsg }}</p>
+              <span v-else class="flex-1 text-[11px] text-muted-foreground">{{ t('cli_bootstrap_after_hint') }}</span>
+              <Button size="sm" variant="outline" :disabled="bootstrapLoading" @click="rescanPath">
+                <Loader2 v-if="bootstrapLoading" class="h-3 w-3 animate-spin" />
+                <RefreshCw v-else class="h-3 w-3" /> {{ t('cli_bootstrap_rescan') }}
+              </Button>
+            </div>
+          </div>
+
           <div class="space-y-2">
             <Label>{{ t('cli_install_manager') }}</Label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">

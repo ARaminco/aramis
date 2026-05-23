@@ -3,6 +3,8 @@ import { requireAuth } from '../middleware/auth.js';
 import { detectCLIs, listClaudeSessions, listCodexSessions } from '../services/cli-runner.js';
 import { detectInstallers, getInstallOptions, runPlan } from '../services/cli-installer.js';
 import { getCliConfig, setCliConfig, clearCliConfig } from '../services/cli-config.js';
+import { suggestBootstrap, openInTerminal } from '../services/bootstrap.js';
+import { discoverPath, clearPathCache, applyDiscoveredPath } from '../services/path-discover.js';
 
 export const cliRouter = Router();
 cliRouter.use(requireAuth);
@@ -90,4 +92,30 @@ cliRouter.put('/config/:tool', (req, res) => {
 cliRouter.delete('/config/:tool', (req, res) => {
   clearCliConfig(req.params.tool);
   res.json({ ok: true });
+});
+
+// ---- OS-aware bootstrap helpers ----------------------------------------
+
+// Suggest a recommended install command per platform when nothing is on PATH.
+cliRouter.get('/bootstrap', async (_req, res, next) => {
+  try {
+    const data = await suggestBootstrap();
+    res.json(data);
+  } catch (e) { next(e); }
+});
+
+// Open the user's system terminal with a command pre-typed.
+cliRouter.post('/open-terminal', async (req, res, next) => {
+  try {
+    const cmd = String(req.body?.command || '').trim();
+    if (!cmd) return res.status(400).json({ error: 'command required' });
+    res.json(await openInTerminal(cmd));
+  } catch (e) { next(e); }
+});
+
+// Re-scan PATH (e.g. after the user opened a terminal and installed something).
+cliRouter.post('/refresh-path', (_req, res) => {
+  clearPathCache();
+  applyDiscoveredPath();
+  res.json({ ok: true, path: process.env.PATH });
 });

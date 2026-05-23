@@ -12,6 +12,7 @@ import path from 'node:path';
 import os from 'node:os';
 import net from 'node:net';
 import { spawn } from 'node:child_process';
+import { findBin } from './path-discover.js';
 
 const SSH_DIR = path.join(os.homedir(), '.ssh');
 
@@ -177,7 +178,7 @@ export function sshExec({ host, command, timeoutMs = 60_000, onChunk, signal }) 
     let killed = false;
     let child;
     try {
-      child = spawn('ssh', args, { env: process.env });
+      child = spawn(findBin('ssh') || 'ssh', args, { env: process.env });
     } catch (e) {
       resolve({ ok: false, error: e.message, exit_code: -1 });
       return;

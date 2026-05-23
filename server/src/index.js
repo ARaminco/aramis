@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import './db.js'; // initializes schema
+import { applyDiscoveredPath } from './services/path-discover.js';
+applyDiscoveredPath();
 import { authRouter } from './routes/auth.js';
 import { configRouter } from './routes/config.js';
 import { systemRouter } from './routes/system.js';
