@@ -38,7 +38,27 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
+
+# AI tools — local configs, caches, sessions, and per-user rules.
+# (CLAUDE.md and AGENTS.md are intentionally committed as project rules.)
+.claude/
+.codex/
 .cursor/
+.cursorrules
+.cursorignore
+.aider*
+.continue/
+.copilot/
+.github-copilot/
+.cline/
+.windsurf/
+.windsurfrules
+.codeium/
+.codeiumignore
+.gemini/
+GEMINI.md
+.ai/
+.llm/
 
 # TypeScript / build artifacts
 *.tsbuildinfo

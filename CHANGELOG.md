@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.5.1] - 2026-05-23
+
+- Ignore local AI tool configs (.claude, .codex, .cursor, .aider, .continue, .copilot, .cline, .windsurf, .codeium, .gemini, etc.) in .gitignore
+
 ## [0.5.0] - 2026-05-23
 
 - Production-ready security + paste-image + login flow: Helmet security headers, rate-limited /api/auth, CORS lockdown via CORS_ORIGIN, fatal-stop on dev JWT secret in prod, AES-256-GCM for FTP/CLI keys, DOMPurify XSS sanitization on all rendered markdown, CSP meta tag, fs path-traversal hardening (null bytes rejected, ARAMIS_FS_ROOT confines browsing); image paste/drop/pick in composer with live preview chips + /api/uploads/image (10MiB, image MIME allowlist, unguessable 32-hex IDs); Login buttons that launch `claude login` / `codex login` in the user's system terminal; copy buttons icon-only; PathPicker dialog wired into ModeSwitcher cwd + FileExplorer + GitPanel; syntax-highlighted code blocks via highlight.js + marked-highlight
