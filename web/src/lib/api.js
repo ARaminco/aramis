@@ -71,6 +71,69 @@ export const api = {
   // Changelog
   getChangelog: () => request('/changelog'),
 
+  // SSH
+  sshHosts: () => request('/ssh/hosts'),
+  sshProbe: (host, port) => request('/ssh/probe', { method: 'POST', body: JSON.stringify({ host, port }) }),
+  sshExec: (host, command, timeout_seconds) => request('/ssh/exec', { method: 'POST', body: JSON.stringify({ host, command, timeout_seconds }) }),
+  // Streaming ssh — returns a function that aborts.
+  sshStream(host, command, onEvent) {
+    const ctrl = new AbortController();
+    const headers = { 'Content-Type': 'application/json' };
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    fetch(`${BASE}/ssh/stream`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ host, command }),
+      signal: ctrl.signal,
+    }).then(async (res) => {
+      if (!res.ok || !res.body) {
+        const t = await res.text().catch(() => '');
+        onEvent({ event: 'error', data: { message: t || res.statusText } });
+        onEvent({ event: 'done', data: {} });
+        return;
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) !== -1) {
+          const frame = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          let event = 'message', dataStr = '';
+          for (const line of frame.split('\n')) {
+            if (line.startsWith('event: ')) event = line.slice(7).trim();
+            else if (line.startsWith('data: ')) dataStr += line.slice(6);
+          }
+          if (!dataStr) continue;
+          let data; try { data = JSON.parse(dataStr); } catch { data = { raw: dataStr }; }
+          onEvent({ event, data });
+        }
+      }
+    }).catch((err) => {
+      if (ctrl.signal.aborted) return;
+      onEvent({ event: 'error', data: { message: err.message || String(err) } });
+      onEvent({ event: 'done', data: {} });
+    });
+    return () => ctrl.abort();
+  },
+
+  // FTP
+  ftpList: () => request('/ftp/connections'),
+  ftpCreate: (conn) => request('/ftp/connections', { method: 'POST', body: JSON.stringify(conn) }),
+  ftpUpdate: (id, patch) => request(`/ftp/connections/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  ftpDelete: (id) => request(`/ftp/connections/${id}`, { method: 'DELETE' }),
+  ftpTest: (id) => request(`/ftp/connections/${id}/test`, { method: 'POST' }),
+  ftpListDir: (id, path) => request(`/ftp/connections/${id}/list`, { method: 'POST', body: JSON.stringify({ path }) }),
+  ftpRead: (id, path) => request(`/ftp/connections/${id}/read`, { method: 'POST', body: JSON.stringify({ path }) }),
+  ftpWrite: (id, path, content) => request(`/ftp/connections/${id}/write`, { method: 'POST', body: JSON.stringify({ path, content }) }),
+  ftpRemove: (id, path) => request(`/ftp/connections/${id}/delete`, { method: 'POST', body: JSON.stringify({ path }) }),
+  ftpMkdir: (id, path) => request(`/ftp/connections/${id}/mkdir`, { method: 'POST', body: JSON.stringify({ path }) }),
+
   // Git
   gitStatus: (path) => request(`/git/status?path=${encodeURIComponent(path)}`),
   gitStage: (path, files) => request('/git/stage', { method: 'POST', body: JSON.stringify({ path, files }) }),

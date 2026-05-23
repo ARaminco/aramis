@@ -61,6 +61,22 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_memory_kind ON memory(kind);
+
+  -- Saved FTP / FTPS / SFTP connections. Passwords are stored encrypted
+  -- (see services/crypto.js).
+  CREATE TABLE IF NOT EXISTS ftp_connections (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    protocol TEXT NOT NULL DEFAULT 'ftp',     -- 'ftp' | 'ftps'
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL DEFAULT 21,
+    username TEXT NOT NULL DEFAULT 'anonymous',
+    password_enc TEXT,                         -- encrypted (or empty for anonymous)
+    initial_path TEXT,
+    secure INTEGER NOT NULL DEFAULT 0,         -- 1 = implicit FTPS
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `);
 
 // --- runtime migrations: keep existing DBs working ---

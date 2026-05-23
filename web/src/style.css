@@ -1,7 +1,9 @@
 /*
-  Vazirmatn — used ONLY for Persian/Arabic glyphs in any locale.
-  unicode-range restricts the font to the relevant code points, so Latin text
-  always falls back to the next font in the stack (system / Tailwind sans).
+  Vazirmatn — used for BOTH Persian and Latin glyphs across the entire app.
+  We deliberately drop the `unicode-range` restriction so English text also
+  renders in Vazirmatn (the Latin glyphs in this typeface are designed
+  alongside the Persian set, so the visual rhythm stays consistent in both
+  locales).
 */
 @font-face {
   font-family: 'Vazirmatn';
@@ -9,9 +11,6 @@
   font-weight: 400;
   font-display: swap;
   src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Regular.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
-                 U+200C-200F, U+2010-201F, U+2066-2069,
-                 U+FB50-FDFF, U+FE70-FEFF;
 }
 @font-face {
   font-family: 'Vazirmatn';
@@ -19,9 +18,6 @@
   font-weight: 500;
   font-display: swap;
   src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Medium.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
-                 U+200C-200F, U+2010-201F, U+2066-2069,
-                 U+FB50-FDFF, U+FE70-FEFF;
 }
 @font-face {
   font-family: 'Vazirmatn';
@@ -29,9 +25,6 @@
   font-weight: 600;
   font-display: swap;
   src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-SemiBold.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
-                 U+200C-200F, U+2010-201F, U+2066-2069,
-                 U+FB50-FDFF, U+FE70-FEFF;
 }
 @font-face {
   font-family: 'Vazirmatn';
@@ -39,9 +32,6 @@
   font-weight: 700;
   font-display: swap;
   src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Bold.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0660-066D, U+0750-077F, U+08A0-08FF,
-                 U+200C-200F, U+2010-201F, U+2066-2069,
-                 U+FB50-FDFF, U+FE70-FEFF;
 }
 
 @tailwind base;
@@ -99,20 +89,21 @@
   }
   html, body { height: 100%; }
   body {
+    /* Vazirmatn is the primary font for every locale (Persian + Latin). */
+    font-family: 'Vazirmatn', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
-  }
-  /* English locale — Latin gets system sans, Persian still falls through to
-     Vazirmatn via the unicode-range @font-face above (always last in the stack). */
-  html[lang="en"] body {
-    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Vazirmatn', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   pre, code, kbd, samp {
     direction: ltr;
     text-align: left;
     unicode-bidi: embed;
+    /* Keep a monospace stack for code so columns line up; Vazirmatn is sans. */
+    font-family: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, Consolas, monospace;
   }
   /* Prevent iOS Safari from zooming form inputs */
   @media (max-width: 768px) {
@@ -122,28 +113,31 @@
 }
 
 /* ===========================================================
-   macOS Electron — reserve top-left space for the traffic-light buttons.
-   The lights live in a ~78×28 area at the top-left of the window.
-   We pad whichever element occupies that corner of the layout:
-     • LTR desktop:  sidebar header
-     • RTL desktop:  main top header (sidebar is on the right)
-     • Mobile:       main top header (sidebar is a drawer)
-   We also make the top row of those bars a window-drag region so the user
-   can still drag the window from there.
+   macOS Electron — dedicated traffic-light row at the very top of the window.
+   Instead of overlapping the sidebar header with the traffic-light buttons
+   (which produced cramped spacing), we render a thin, draggable strip
+   above all UI. The strip is invisible (matches the window background)
+   but reserves space for the buttons and provides the window drag handle.
    =========================================================== */
 @layer base {
-  html.is-electron-mac[dir="ltr"] .sidebar-header {
-    padding-left: 78px;
+  .electron-titlebar-strip { display: none; }
+  html.is-electron-mac .electron-titlebar-strip {
+    display: block;
+    height: 28px;
+    width: 100%;
+    flex-shrink: 0;
+    -webkit-app-region: drag;
+    background: hsl(var(--card));
+    border-bottom: 1px solid hsl(var(--border));
   }
-  html.is-electron-mac[dir="rtl"] .main-header {
-    padding-left: 78px;
+  /* Re-enable interactive controls that may be rendered inside the strip */
+  html.is-electron-mac .electron-titlebar-strip button,
+  html.is-electron-mac .electron-titlebar-strip a,
+  html.is-electron-mac .electron-titlebar-strip input {
+    -webkit-app-region: no-drag;
   }
-  @media (max-width: 767px) {
-    html.is-electron-mac .main-header {
-      padding-left: 78px;
-    }
-  }
-  /* Make titlebar areas draggable, but exempt all interactive controls. */
+  /* Header bars stay drag-able too so the user can move the window from anywhere
+     visually consistent — but their inner controls remain clickable. */
   html.is-electron-mac .sidebar-header,
   html.is-electron-mac .main-header {
     -webkit-app-region: drag;
@@ -152,7 +146,8 @@
   html.is-electron-mac .main-header button,
   html.is-electron-mac .sidebar-header input,
   html.is-electron-mac .main-header input,
-  html.is-electron-mac .sidebar-header a {
+  html.is-electron-mac .sidebar-header a,
+  html.is-electron-mac .main-header a {
     -webkit-app-region: no-drag;
   }
 }
@@ -206,7 +201,7 @@
   background: rgba(0, 0, 0, 0.45);
   color: #e5e7eb;
   font-size: 10px;
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
   line-height: 1;
   opacity: 0;
   transition: opacity 120ms ease, background 120ms ease;

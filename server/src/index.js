@@ -16,6 +16,8 @@ import { cliRouter } from './routes/cli.js';
 import { fsRouter } from './routes/fs.js';
 import { gitRouter } from './routes/git.js';
 import { changelogRouter } from './routes/changelog.js';
+import { sshRouter } from './routes/ssh.js';
+import { ftpRouter } from './routes/ftp.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,6 +48,8 @@ export function createApp({ staticDir } = {}) {
   app.use('/api/fs', fsRouter);
   app.use('/api/git', gitRouter);
   app.use('/api/changelog', changelogRouter);
+  app.use('/api/ssh', sshRouter);
+  app.use('/api/ftp', ftpRouter);
 
   // Serve built frontend if present (default location for monorepo run).
   const distDir = staticDir || path.resolve(__dirname, '..', '..', 'web', 'dist');

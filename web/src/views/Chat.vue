@@ -19,11 +19,12 @@ import CommandPalette from '@/components/CommandPalette.vue';
 import FileExplorer from '@/components/FileExplorer.vue';
 import GitPanel from '@/components/GitPanel.vue';
 import SessionImporter from '@/components/SessionImporter.vue';
+import HostsPanel from '@/components/HostsPanel.vue';
 import {
   Plus, Send, Settings, Square, Trash2, Pencil, MessageSquare, Bot, User,
   Sparkles, AlertTriangle, Sun, Moon, LogOut, Menu, X as XIcon, Globe, Loader2, ArrowUp,
   Mic, MicOff, Pin, PinOff, Folder, GitBranch, Download, Search, Command as CommandIcon,
-  Cpu,
+  Cpu, Server,
 } from 'lucide-vue-next';
 import { useVoiceInput } from '@/lib/voice';
 
@@ -47,6 +48,7 @@ const paletteOpen = ref(false);
 const fileExplorerOpen = ref(false);
 const gitPanelOpen = ref(false);
 const importerOpen = ref(false);
+const hostsPanelOpen = ref(false);
 
 const voice = useVoiceInput();
 const voiceErrMsg = ref('');
@@ -124,6 +126,8 @@ function onGlobalKey(e) {
   if (e.key.toLowerCase() === 'e') { e.preventDefault(); fileExplorerOpen.value = !fileExplorerOpen.value; return; }
   // ⌘G — git panel
   if (e.key.toLowerCase() === 'g') { e.preventDefault(); gitPanelOpen.value = !gitPanelOpen.value; return; }
+  // ⌘H — hosts panel (SSH + FTP)
+  if (e.key.toLowerCase() === 'h') { e.preventDefault(); hostsPanelOpen.value = !hostsPanelOpen.value; return; }
   // ⌘/ — toggle theme
   if (e.key === '/') { e.preventDefault(); toggleDark(); return; }
 }
@@ -270,7 +274,7 @@ function fmtCost(usd) {
 </script>
 
 <template>
-  <div class="flex h-[100dvh] overflow-hidden bg-background text-foreground">
+  <div class="flex h-full overflow-hidden bg-background text-foreground">
     <!-- Sidebar (drawer on mobile, fixed on desktop) -->
     <Transition
       enter-active-class="transition-opacity duration-200"
@@ -313,12 +317,15 @@ function fmtCost(usd) {
           <span class="flex-1 text-start">{{ t('cmd_palette') }}</span>
           <span class="text-[10px] text-muted-foreground font-mono" dir="ltr">⌘K</span>
         </Button>
-        <div class="grid grid-cols-3 gap-1.5">
-          <Button variant="outline" size="sm" class="text-[11px]" @click="fileExplorerOpen = true" :title="t('cmd_open_files')">
+        <div class="grid grid-cols-4 gap-1.5">
+          <Button variant="outline" size="sm" class="text-[11px]" @click="fileExplorerOpen = true" :title="t('cmd_open_files') + ' (⌘E)'">
             <Folder class="h-3.5 w-3.5" />
           </Button>
-          <Button variant="outline" size="sm" class="text-[11px]" @click="gitPanelOpen = true" :title="t('cmd_open_git')">
+          <Button variant="outline" size="sm" class="text-[11px]" @click="gitPanelOpen = true" :title="t('cmd_open_git') + ' (⌘G)'">
             <GitBranch class="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="outline" size="sm" class="text-[11px]" @click="hostsPanelOpen = true" :title="t('hosts_title') + ' (⌘H)'">
+            <Server class="h-3.5 w-3.5" />
           </Button>
           <Button variant="outline" size="sm" class="text-[11px]" @click="importerOpen = true" :title="t('import_sessions')">
             <Download class="h-3.5 w-3.5" />
@@ -447,6 +454,9 @@ function fmtCost(usd) {
         </Button>
         <Button variant="ghost" size="icon" @click="gitPanelOpen = true" :title="t('cmd_open_git') + ' (⌘G)'">
           <GitBranch class="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" @click="hostsPanelOpen = true" :title="t('hosts_title') + ' (⌘H)'">
+          <Server class="h-4 w-4" />
         </Button>
         <Button v-if="store.activeId" variant="ghost" size="icon" class="md:hidden" @click="newChat">
           <Plus class="h-5 w-5" />
@@ -642,7 +652,7 @@ function fmtCost(usd) {
           <p v-if="voiceErrMsg" class="text-[10.5px] text-destructive mt-1.5 px-1 text-center sm:text-start">{{ voiceErrMsg }}</p>
           <p v-else class="text-[10.5px] text-muted-foreground mt-1.5 px-1 text-center sm:text-start leading-relaxed">
             {{ t('composer_hint') }}
-            <span class="hidden sm:inline" dir="ltr"> · ⌘K palette · ⌘N new · ⌘E files · ⌘G git</span>
+            <span class="hidden sm:inline" dir="ltr"> · ⌘K palette · ⌘N new · ⌘E files · ⌘G git · ⌘H hosts</span>
           </p>
         </div>
       </div>
@@ -654,9 +664,11 @@ function fmtCost(usd) {
       @update:open="(v) => paletteOpen = v"
       @open-file-explorer="fileExplorerOpen = true"
       @open-git-panel="gitPanelOpen = true"
+      @open-hosts-panel="hostsPanelOpen = true"
     />
     <FileExplorer :open="fileExplorerOpen" @update:open="(v) => fileExplorerOpen = v" />
     <GitPanel :open="gitPanelOpen" @update:open="(v) => gitPanelOpen = v" />
+    <HostsPanel :open="hostsPanelOpen" @update:open="(v) => hostsPanelOpen = v" />
     <SessionImporter :open="importerOpen" @update:open="(v) => importerOpen = v" @imported="store.loadChats()" />
 
     <Dialog

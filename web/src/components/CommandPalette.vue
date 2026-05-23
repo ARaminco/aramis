@@ -3,13 +3,13 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   Search, Plus, Settings, MessageSquare, Bot, Cpu, Sun, Moon, Globe,
-  Folder, GitBranch, ChevronRight,
+  Folder, GitBranch, ChevronRight, Server,
 } from 'lucide-vue-next';
 import { useChatStore } from '@/stores/chat';
 import { useI18n } from '@/lib/i18n';
 
 const props = defineProps({ open: Boolean });
-const emit = defineEmits(['update:open', 'open-file-explorer', 'open-git-panel']);
+const emit = defineEmits(['update:open', 'open-file-explorer', 'open-git-panel', 'open-hosts-panel']);
 
 const router = useRouter();
 const store = useChatStore();
@@ -75,6 +75,14 @@ const commands = computed(() => {
       hint: t('cmd_open_git_hint'),
       icon: GitBranch,
       run: () => emit('open-git-panel'),
+    },
+    {
+      group: 'panels',
+      id: 'open-hosts',
+      title: t('cmd_open_hosts'),
+      hint: t('cmd_open_hosts_hint'),
+      icon: Server,
+      run: () => emit('open-hosts-panel'),
     },
     {
       group: 'actions',

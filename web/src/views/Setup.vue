@@ -46,7 +46,7 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-[100dvh] flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
+  <div class="min-h-full flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
     <div class="absolute top-3 end-3 flex gap-1">
       <Button variant="ghost" size="icon" @click="setLocale(locale === 'fa' ? 'en' : 'fa')" :title="t('language')">
         <Globe class="h-4 w-4" />

@@ -11,7 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-23
+
 - Build fix: include arch in DMG title so arm64 + x64 builds don't collide on /Volumes/Aramis
+- SSH + FTP host manager (~/.ssh/config discovery, run-command streaming, encrypted FTP credentials, file browser); global Vazirmatn font for both locales; dedicated macOS titlebar strip so traffic-lights stop overlapping the sidebar header
 
 ## [0.2.0] - 2026-05-23
 
