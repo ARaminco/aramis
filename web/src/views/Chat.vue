@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chat';
 import { useAuthStore } from '@/stores/auth';
@@ -13,10 +13,17 @@ import Dialog from '@/components/ui/Dialog.vue';
 import Badge from '@/components/ui/Badge.vue';
 import MessageContent from '@/components/MessageContent.vue';
 import ToolCallCard from '@/components/ToolCallCard.vue';
+import CopyButton from '@/components/CopyButton.vue';
+import ModeSwitcher from '@/components/ModeSwitcher.vue';
+import CommandPalette from '@/components/CommandPalette.vue';
+import FileExplorer from '@/components/FileExplorer.vue';
+import GitPanel from '@/components/GitPanel.vue';
+import SessionImporter from '@/components/SessionImporter.vue';
 import {
   Plus, Send, Settings, Square, Trash2, Pencil, MessageSquare, Bot, User,
   Sparkles, AlertTriangle, Sun, Moon, LogOut, Menu, X as XIcon, Globe, Loader2, ArrowUp,
-  Mic, MicOff,
+  Mic, MicOff, Pin, PinOff, Folder, GitBranch, Download, Search, Command as CommandIcon,
+  Cpu,
 } from 'lucide-vue-next';
 import { useVoiceInput } from '@/lib/voice';
 
@@ -30,9 +37,16 @@ const input = ref('');
 const askAnswer = ref('');
 const scroller = ref(null);
 const aiConfigured = ref(true);
+const appVersion = ref('—');
 const renameTarget = ref(null);
 const renameTitle = ref('');
 const sidebarOpen = ref(false);
+const search = ref('');
+
+const paletteOpen = ref(false);
+const fileExplorerOpen = ref(false);
+const gitPanelOpen = ref(false);
+const importerOpen = ref(false);
 
 const voice = useVoiceInput();
 const voiceErrMsg = ref('');
@@ -85,12 +99,36 @@ function toggleLocale() {
 
 onMounted(async () => {
   await store.loadChats();
+  store.detectCLIs(); // background — populates the mode switcher
   try { const { config } = await api.getAIConfig(); aiConfigured.value = !!(config && config.model); }
   catch { aiConfigured.value = false; }
+  try { const cl = await api.getChangelog(); if (cl?.version) appVersion.value = cl.version; }
+  catch { /* changelog endpoint may be unavailable; ignore */ }
 
   const id = route.params.id || store.chats[0]?.id;
   if (id) await openChat(id);
 });
+
+// Global keyboard shortcuts
+function onGlobalKey(e) {
+  const isMac = navigator.platform.toLowerCase().includes('mac');
+  const meta = isMac ? e.metaKey : e.ctrlKey;
+  if (!meta) return;
+  // ⌘K — palette
+  if (e.key.toLowerCase() === 'k') { e.preventDefault(); paletteOpen.value = !paletteOpen.value; return; }
+  // ⌘N — new chat
+  if (e.key.toLowerCase() === 'n') { e.preventDefault(); newChat(); return; }
+  // ⌘B — toggle sidebar
+  if (e.key.toLowerCase() === 'b') { e.preventDefault(); sidebarOpen.value = !sidebarOpen.value; return; }
+  // ⌘E — file explorer
+  if (e.key.toLowerCase() === 'e') { e.preventDefault(); fileExplorerOpen.value = !fileExplorerOpen.value; return; }
+  // ⌘G — git panel
+  if (e.key.toLowerCase() === 'g') { e.preventDefault(); gitPanelOpen.value = !gitPanelOpen.value; return; }
+  // ⌘/ — toggle theme
+  if (e.key === '/') { e.preventDefault(); toggleDark(); return; }
+}
+onMounted(() => document.addEventListener('keydown', onGlobalKey));
+onUnmounted(() => document.removeEventListener('keydown', onGlobalKey));
 
 watch(() => route.params.id, async (id) => {
   if (id && id !== store.activeId) await openChat(id);
@@ -190,6 +228,45 @@ const phaseLabel = computed(() => {
 });
 
 const examples = computed(() => [t('example_disk'), t('example_nginx'), t('example_ports')]);
+
+// Mode handling: chat-level overrides composer-level when one is active.
+const currentMode = computed(() => store.activeMode || store.composerMode || 'aramis');
+async function setMode(mode) {
+  store.setComposerMode(mode);
+  if (store.activeId && currentMode.value !== mode) {
+    await store.setChatMode(store.activeId, mode);
+  }
+}
+async function setCwd(cwd) {
+  store.setComposerCwd(cwd);
+  if (store.activeId) await store.setChatCwd(store.activeId, cwd);
+}
+
+// Filtered chat list
+const filteredChats = computed(() => {
+  const q = search.value.trim().toLowerCase();
+  if (!q) return store.chats;
+  return store.chats.filter((c) =>
+    (c.title || '').toLowerCase().includes(q) ||
+    (c.first_user || '').toLowerCase().includes(q)
+  );
+});
+
+const pinned = computed(() => filteredChats.value.filter((c) => c.pinned));
+const recent = computed(() => filteredChats.value.filter((c) => !c.pinned));
+
+const isCLIMode = computed(() => currentMode.value === 'claude' || currentMode.value === 'codex');
+
+function modeBadge(mode) {
+  if (mode === 'claude') return { label: 'Claude Code', class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' };
+  if (mode === 'codex')  return { label: 'Codex',       class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' };
+  return { label: 'Aramis', class: 'bg-primary/15 text-primary' };
+}
+
+function fmtCost(usd) {
+  if (usd == null) return '';
+  return '$' + Number(usd).toFixed(4);
+}
 </script>
 
 <template>
@@ -227,35 +304,97 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
         </Button>
       </div>
 
-      <div class="px-3 py-3">
+      <div class="px-3 pt-3 pb-2 space-y-2">
         <Button class="w-full" @click="newChat">
           <Plus class="h-4 w-4" /> {{ t('new_chat') }}
         </Button>
+        <Button class="w-full" variant="outline" @click="paletteOpen = true">
+          <Search class="h-3.5 w-3.5" />
+          <span class="flex-1 text-start">{{ t('cmd_palette') }}</span>
+          <span class="text-[10px] text-muted-foreground font-mono" dir="ltr">⌘K</span>
+        </Button>
+        <div class="grid grid-cols-3 gap-1.5">
+          <Button variant="outline" size="sm" class="text-[11px]" @click="fileExplorerOpen = true" :title="t('cmd_open_files')">
+            <Folder class="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="outline" size="sm" class="text-[11px]" @click="gitPanelOpen = true" :title="t('cmd_open_git')">
+            <GitBranch class="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="outline" size="sm" class="text-[11px]" @click="importerOpen = true" :title="t('import_sessions')">
+            <Download class="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
-      <div class="px-3 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-        {{ t('chats') }}
-      </div>
-      <div class="flex-1 overflow-y-auto scrollbar-thin px-2">
-        <div v-if="store.chats.length === 0" class="text-xs text-muted-foreground p-4 text-center">
-          {{ t('no_chats') }}
+      <!-- Search -->
+      <div class="px-3 pb-2">
+        <div class="relative">
+          <Search class="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 h-3 w-3 text-muted-foreground" />
+          <input
+            v-model="search"
+            type="text"
+            :placeholder="t('search_chats')"
+            class="w-full rounded-md border border-input bg-transparent ltr:pl-7 rtl:pr-7 ltr:pr-2 rtl:pl-2 py-1.5 text-xs outline-none focus:border-primary"
+          />
         </div>
-        <button
-          v-for="c in store.chats"
-          :key="c.id"
-          @click="pickChat(c.id)"
-          :class="[
-            'group w-full text-start rounded-md px-2.5 py-2 my-0.5 text-sm transition flex items-center gap-2',
-            store.activeId === c.id ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60',
-          ]"
-        >
-          <MessageSquare class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span class="truncate flex-1 min-w-0" dir="auto">{{ c.title || t('new_chat') }}</span>
-          <span class="opacity-0 group-hover:opacity-100 md:flex gap-1 hidden">
-            <span class="p-1 rounded hover:bg-background/60" @click.stop="startRename(c)"><Pencil class="h-3.5 w-3.5" /></span>
-            <span class="p-1 rounded hover:bg-background/60" @click.stop="deleteChat(c)"><Trash2 class="h-3.5 w-3.5 text-destructive" /></span>
-          </span>
-        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto scrollbar-thin px-2 pb-2">
+        <div v-if="filteredChats.length === 0" class="text-xs text-muted-foreground p-4 text-center">
+          {{ search ? t('search_no_results') : t('no_chats') }}
+        </div>
+
+        <!-- Pinned -->
+        <template v-if="pinned.length">
+          <div class="px-1.5 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <Pin class="h-2.5 w-2.5" /> {{ t('pinned') }}
+          </div>
+          <button
+            v-for="c in pinned" :key="c.id"
+            @click="pickChat(c.id)"
+            :class="[
+              'group w-full text-start rounded-md px-2.5 py-2 my-0.5 text-sm transition flex items-center gap-2',
+              store.activeId === c.id ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60',
+            ]"
+          >
+            <Pin class="h-3 w-3 text-amber-500 shrink-0" />
+            <span class="truncate flex-1 min-w-0" dir="auto">{{ c.title || t('new_chat') }}</span>
+            <span v-if="c.mode && c.mode !== 'aramis'" :class="['text-[9px] font-medium px-1.5 py-0.5 rounded-full', modeBadge(c.mode).class]" dir="ltr">
+              {{ c.mode }}
+            </span>
+            <span class="opacity-0 group-hover:opacity-100 md:flex gap-1 hidden">
+              <span class="p-1 rounded hover:bg-background/60" @click.stop="store.togglePin(c.id)"><PinOff class="h-3.5 w-3.5" /></span>
+              <span class="p-1 rounded hover:bg-background/60" @click.stop="startRename(c)"><Pencil class="h-3.5 w-3.5" /></span>
+              <span class="p-1 rounded hover:bg-background/60" @click.stop="deleteChat(c)"><Trash2 class="h-3.5 w-3.5 text-destructive" /></span>
+            </span>
+          </button>
+        </template>
+
+        <!-- Recent -->
+        <template v-if="recent.length">
+          <div v-if="pinned.length" class="px-1.5 pt-3 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+            {{ t('chats') }}
+          </div>
+          <button
+            v-for="c in recent" :key="c.id"
+            @click="pickChat(c.id)"
+            :class="[
+              'group w-full text-start rounded-md px-2.5 py-2 my-0.5 text-sm transition flex items-center gap-2',
+              store.activeId === c.id ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60',
+            ]"
+          >
+            <MessageSquare class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span class="truncate flex-1 min-w-0" dir="auto">{{ c.title || t('new_chat') }}</span>
+            <span v-if="c.mode && c.mode !== 'aramis'" :class="['text-[9px] font-medium px-1.5 py-0.5 rounded-full', modeBadge(c.mode).class]" dir="ltr">
+              {{ c.mode }}
+            </span>
+            <span class="opacity-0 group-hover:opacity-100 md:flex gap-1 hidden">
+              <span class="p-1 rounded hover:bg-background/60" @click.stop="store.togglePin(c.id)"><Pin class="h-3.5 w-3.5" /></span>
+              <span class="p-1 rounded hover:bg-background/60" @click.stop="startRename(c)"><Pencil class="h-3.5 w-3.5" /></span>
+              <span class="p-1 rounded hover:bg-background/60" @click.stop="deleteChat(c)"><Trash2 class="h-3.5 w-3.5 text-destructive" /></span>
+            </span>
+          </button>
+        </template>
       </div>
 
       <div class="border-t border-border p-2 flex items-center gap-1">
@@ -266,36 +405,68 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
           <LogOut class="h-4 w-4" />
         </Button>
       </div>
-      <a
-        href="https://aramin.co"
-        target="_blank"
-        rel="noopener"
-        class="text-[10px] text-muted-foreground/70 hover:text-foreground text-center py-1.5 border-t border-border transition"
-        dir="ltr"
-      >
-        Built by Aliasghar Ramin · aramin.co
-      </a>
+      <div class="border-t border-border flex items-center justify-between gap-2 px-2 py-1">
+        <router-link
+          to="/changelog"
+          class="text-[10px] text-muted-foreground/80 hover:text-primary inline-flex items-center gap-1 font-mono px-2 py-1 rounded hover:bg-accent transition"
+          dir="ltr"
+          :title="t('changelog_title')"
+        >
+          v{{ appVersion }}
+        </router-link>
+        <a
+          href="https://aramin.co"
+          target="_blank"
+          rel="noopener"
+          class="text-[10px] text-muted-foreground/70 hover:text-foreground transition"
+          dir="ltr"
+        >
+          aramin.co
+        </a>
+      </div>
     </aside>
 
     <!-- Main -->
     <main class="flex-1 flex flex-col min-w-0 relative">
-      <!-- Top bar (mobile + chat title on all sizes) -->
+      <!-- Top bar -->
       <header class="main-header flex items-center gap-2 px-3 py-2.5 border-b border-border bg-card/40 backdrop-blur-sm">
         <Button variant="ghost" size="icon" class="md:hidden" @click="sidebarOpen = true">
           <Menu class="h-5 w-5" />
         </Button>
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 flex items-center gap-2">
           <div class="text-sm font-medium truncate" dir="auto">{{ activeChatTitle }}</div>
+          <span v-if="store.activeId" :class="['hidden sm:inline-flex text-[9.5px] font-medium px-1.5 py-0.5 rounded-full', modeBadge(currentMode).class]" dir="ltr">
+            {{ modeBadge(currentMode).label }}
+          </span>
         </div>
+        <Button variant="ghost" size="icon" class="hidden md:inline-flex" @click="paletteOpen = true" :title="t('cmd_palette') + ' (⌘K)'">
+          <CommandIcon class="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" @click="fileExplorerOpen = true" :title="t('cmd_open_files') + ' (⌘E)'">
+          <Folder class="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" @click="gitPanelOpen = true" :title="t('cmd_open_git') + ' (⌘G)'">
+          <GitBranch class="h-4 w-4" />
+        </Button>
         <Button v-if="store.activeId" variant="ghost" size="icon" class="md:hidden" @click="newChat">
           <Plus class="h-5 w-5" />
         </Button>
       </header>
 
-      <div v-if="!aiConfigured" class="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center gap-2 text-xs">
+      <div v-if="!aiConfigured && currentMode === 'aramis'" class="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center gap-2 text-xs">
         <AlertTriangle class="h-4 w-4 text-amber-500 shrink-0" />
         <span class="flex-1">{{ t('ai_not_configured_banner') }}</span>
         <Button size="sm" variant="outline" @click="gotoSettings">{{ t('configure') }}</Button>
+      </div>
+
+      <!-- CLI session info bar -->
+      <div v-if="isCLIMode && store.cliMeta" class="bg-card/40 border-b border-border px-4 py-1.5 flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap" dir="ltr">
+        <span v-if="store.cliMeta.session_id">session: <code class="font-mono">{{ store.cliMeta.session_id.slice(0,12) }}…</code></span>
+        <span v-if="store.cliMeta.model">model: <code class="font-mono">{{ store.cliMeta.model }}</code></span>
+        <span v-if="store.cliMeta.cwd">cwd: <code class="font-mono">{{ store.cliMeta.cwd }}</code></span>
+        <span v-if="store.cliMeta.total_cost_usd != null">cost: <code class="font-mono">{{ fmtCost(store.cliMeta.total_cost_usd) }}</code></span>
+        <span v-if="store.cliMeta.num_turns != null">turns: {{ store.cliMeta.num_turns }}</span>
+        <CopyButton v-if="store.cliMeta.session_id" :text="store.cliMeta.session_id" size="xs" />
       </div>
 
       <div ref="scroller" class="flex-1 overflow-y-auto scrollbar-thin">
@@ -322,12 +493,17 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
 
           <template v-for="(m, idx) in store.messages" :key="idx">
             <!-- User -->
-            <div v-if="m.role === 'user'" class="flex gap-2.5 justify-end animate-fade-in">
-              <div
-                class="rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-3.5 py-2.5 max-w-[85%] sm:max-w-[80%] whitespace-pre-wrap text-sm leading-relaxed shadow-sm"
-                dir="auto"
-              >
-                {{ m.content }}
+            <div v-if="m.role === 'user'" class="group flex gap-2.5 justify-end animate-fade-in">
+              <div class="flex flex-col items-end gap-1 max-w-[85%] sm:max-w-[80%]">
+                <div
+                  class="rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-3.5 py-2.5 whitespace-pre-wrap text-sm leading-relaxed shadow-sm"
+                  dir="auto"
+                >
+                  {{ m.content }}
+                </div>
+                <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+                  <CopyButton :text="m.content" size="xs" />
+                </div>
               </div>
               <div class="h-7 w-7 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">
                 <User class="h-3.5 w-3.5" />
@@ -335,15 +511,18 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
             </div>
 
             <!-- Inline answer to ask_user -->
-            <div v-else-if="m.role === 'ask_answer'" class="flex gap-2.5 justify-end animate-fade-in">
+            <div v-else-if="m.role === 'ask_answer'" class="group flex gap-2.5 justify-end animate-fade-in">
               <div class="rounded-xl bg-amber-500/15 border border-amber-500/30 text-foreground px-3 py-2 max-w-[85%] text-sm">
-                <div class="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-0.5">↩ {{ t('your_answer') }}</div>
+                <div class="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-0.5 flex items-center justify-between gap-2">
+                  <span>↩ {{ t('your_answer') }}</span>
+                  <CopyButton :text="m.content" size="xs" class="opacity-0 group-hover:opacity-100 transition" />
+                </div>
                 <div class="font-mono" dir="ltr">{{ m.content }}</div>
               </div>
             </div>
 
             <!-- Assistant -->
-            <div v-else-if="m.role === 'assistant'" class="flex gap-2.5 animate-fade-in">
+            <div v-else-if="m.role === 'assistant'" class="group flex gap-2.5 animate-fade-in">
               <div class="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                 <Bot class="h-3.5 w-3.5 text-primary" />
               </div>
@@ -354,6 +533,10 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
                 </template>
                 <div v-if="m.error" class="text-sm text-destructive flex items-center gap-2">
                   <AlertTriangle class="h-4 w-4" /> {{ m.error }}
+                </div>
+                <!-- Action row -->
+                <div v-if="(m.content || (m.tool_calls && m.tool_calls.length)) && !m._streaming" class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+                  <CopyButton :text="m.content || ''" size="xs" :label="t('copy_message')" />
                 </div>
                 <!-- Live phase pill while this bubble is the active one -->
                 <div
@@ -392,7 +575,15 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
 
       <!-- Composer -->
       <div class="border-t border-border bg-background/80 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
-        <div class="max-w-3xl mx-auto px-3 sm:px-6 py-3">
+        <div class="max-w-3xl mx-auto px-3 sm:px-6 py-3 space-y-2">
+          <!-- Mode toolbar -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <ModeSwitcher :mode="currentMode" @update:mode="setMode" @change-cwd="setCwd" />
+            <span v-if="store.activeCwd" class="text-[10.5px] text-muted-foreground font-mono truncate hidden sm:inline" dir="ltr" :title="store.activeCwd">
+              📂 {{ store.activeCwd }}
+            </span>
+          </div>
+
           <div class="rounded-2xl border border-border bg-card shadow-sm flex items-end gap-1.5 p-1.5"
                :class="voice.recording.value && 'ring-2 ring-red-500/40 border-red-500/40'">
 
@@ -451,10 +642,22 @@ const examples = computed(() => [t('example_disk'), t('example_nginx'), t('examp
           <p v-if="voiceErrMsg" class="text-[10.5px] text-destructive mt-1.5 px-1 text-center sm:text-start">{{ voiceErrMsg }}</p>
           <p v-else class="text-[10.5px] text-muted-foreground mt-1.5 px-1 text-center sm:text-start leading-relaxed">
             {{ t('composer_hint') }}
+            <span class="hidden sm:inline" dir="ltr"> · ⌘K palette · ⌘N new · ⌘E files · ⌘G git</span>
           </p>
         </div>
       </div>
     </main>
+
+    <!-- Overlays -->
+    <CommandPalette
+      :open="paletteOpen"
+      @update:open="(v) => paletteOpen = v"
+      @open-file-explorer="fileExplorerOpen = true"
+      @open-git-panel="gitPanelOpen = true"
+    />
+    <FileExplorer :open="fileExplorerOpen" @update:open="(v) => fileExplorerOpen = v" />
+    <GitPanel :open="gitPanelOpen" @update:open="(v) => gitPanelOpen = v" />
+    <SessionImporter :open="importerOpen" @update:open="(v) => importerOpen = v" @imported="store.loadChats()" />
 
     <Dialog
       :open="!!renameTarget"

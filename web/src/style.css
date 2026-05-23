@@ -189,3 +189,34 @@
 .prose-chat blockquote { @apply border-r-2 border-border pr-3 my-2 text-muted-foreground; }
 .prose-chat table { @apply my-2 border-collapse text-xs; }
 .prose-chat th, .prose-chat td { @apply border border-border px-2 py-1; }
+
+/* Copy button on code blocks (injected by MessageContent.vue) */
+.prose-chat pre {
+  position: relative;
+}
+.prose-chat pre .copy-pre-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #e5e7eb;
+  font-size: 10px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 1;
+}
+.prose-chat pre:hover .copy-pre-btn { opacity: 1; }
+.prose-chat pre .copy-pre-btn:hover { background: rgba(0, 0, 0, 0.7); }
+.prose-chat pre .copy-pre-btn.copied { background: rgba(16, 185, 129, 0.45); color: #fff; opacity: 1; }
+.prose-chat pre .copy-pre-btn svg { width: 12px; height: 12px; }
+/* In RTL contexts, keep the copy button on the right edge of the LTR code block */
+html[dir="rtl"] .prose-chat pre .copy-pre-btn { right: auto; left: 6px; }

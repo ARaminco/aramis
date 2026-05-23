@@ -12,6 +12,10 @@ import { chatRouter } from './routes/chat.js';
 import { dataRouter } from './routes/data.js';
 import { diagnosticsRouter } from './routes/diagnostics.js';
 import { transcribeRouter } from './routes/transcribe.js';
+import { cliRouter } from './routes/cli.js';
+import { fsRouter } from './routes/fs.js';
+import { gitRouter } from './routes/git.js';
+import { changelogRouter } from './routes/changelog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -38,6 +42,10 @@ export function createApp({ staticDir } = {}) {
   app.use('/api/data', dataRouter);
   app.use('/api/diagnostics', diagnosticsRouter);
   app.use('/api/transcribe', transcribeRouter);
+  app.use('/api/cli', cliRouter);
+  app.use('/api/fs', fsRouter);
+  app.use('/api/git', gitRouter);
+  app.use('/api/changelog', changelogRouter);
 
   // Serve built frontend if present (default location for monorepo run).
   const distDir = staticDir || path.resolve(__dirname, '..', '..', 'web', 'dist');

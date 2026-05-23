@@ -49,10 +49,34 @@ export const api = {
   clearMemory: () => request('/data/memory', { method: 'DELETE' }),
 
   listChats: () => request('/chats'),
-  createChat: (title) => request('/chats', { method: 'POST', body: JSON.stringify({ title }) }),
+  createChat: (opts = {}) => {
+    const body = typeof opts === 'string' ? { title: opts } : opts;
+    return request('/chats', { method: 'POST', body: JSON.stringify(body) });
+  },
   getChat: (id) => request(`/chats/${id}`),
   renameChat: (id, title) => request(`/chats/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  updateChat: (id, patch) => request(`/chats/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteChat: (id) => request(`/chats/${id}`, { method: 'DELETE' }),
+
+  // External CLIs (Claude Code / Codex / ...)
+  detectCLIs: () => request('/cli/detect'),
+  listCLISessions: (tool, cwd) => request(`/cli/sessions/${encodeURIComponent(tool)}${cwd ? `?cwd=${encodeURIComponent(cwd)}` : ''}`),
+
+  // Filesystem
+  fsHome: () => request('/fs/home'),
+  fsList: (path) => request(`/fs/list?path=${encodeURIComponent(path)}`),
+  fsRead: (path) => request(`/fs/read?path=${encodeURIComponent(path)}`),
+  fsWrite: (path, content) => request('/fs/write', { method: 'POST', body: JSON.stringify({ path, content }) }),
+
+  // Changelog
+  getChangelog: () => request('/changelog'),
+
+  // Git
+  gitStatus: (path) => request(`/git/status?path=${encodeURIComponent(path)}`),
+  gitStage: (path, files) => request('/git/stage', { method: 'POST', body: JSON.stringify({ path, files }) }),
+  gitUnstage: (path, files) => request('/git/unstage', { method: 'POST', body: JSON.stringify({ path, files }) }),
+  gitCommit: (path, message) => request('/git/commit', { method: 'POST', body: JSON.stringify({ path, message }) }),
+  gitDiff: (path, file, staged) => request(`/git/diff?path=${encodeURIComponent(path)}${file ? `&file=${encodeURIComponent(file)}` : ''}${staged ? '&staged=1' : ''}`),
 
   /**
    * Stream a chat turn. Supply either { content } or { ask_response }.

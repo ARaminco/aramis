@@ -13,7 +13,7 @@ import Badge from '@/components/ui/Badge.vue';
 import {
   ArrowLeft, ArrowRight, Loader2, RefreshCw, Save, KeyRound, Cpu, ServerCog, Globe, LogOut, Sun, Moon,
   Database, Brain, Download, Trash2, Plus,
-  Activity, Play, Check, X as XIcon, CircleSlash, Minus, Type,
+  Activity, Play, Check, X as XIcon, CircleSlash, Minus, Type, ScrollText,
 } from 'lucide-vue-next';
 import { scale as uiScale, setScale, bumpScale, resetScale, SCALE_STEP } from '@/lib/ui-scale';
 
@@ -183,6 +183,7 @@ async function changePw() {
 
 function logout() { auth.logout(); router.replace('/login'); }
 function goChat() { router.push('/chat'); }
+function goChangelog() { router.push('/changelog'); }
 </script>
 
 <template>
@@ -514,6 +515,17 @@ function goChat() { router.push('/chat'); }
             <p v-if="memMsg" class="text-xs text-destructive">{{ memMsg }}</p>
           </div>
         </details>
+      </Card>
+
+      <!-- Changelog & Version -->
+      <Card class="p-4 sm:p-5 space-y-3 cursor-pointer hover:bg-accent/40 transition" @click="goChangelog">
+        <div class="flex items-center gap-2">
+          <ScrollText class="h-4 w-4 text-muted-foreground" />
+          <h2 class="font-medium flex-1">{{ t('changelog_title') }}</h2>
+          <ArrowRight v-if="locale === 'fa'" class="h-4 w-4 text-muted-foreground rotate-180" />
+          <ArrowLeft v-else class="h-4 w-4 text-muted-foreground" />
+        </div>
+        <p class="text-xs text-muted-foreground leading-relaxed">{{ t('changelog_settings_blurb') }}</p>
       </Card>
 
       <!-- Password -->

@@ -1,23 +1,68 @@
 import { defineStore } from 'pinia';
 import { api } from '@/lib/api';
 
+const MODE_KEY = 'aramis_default_mode';
+const CWD_KEY = 'aramis_default_cwd';
+
+function getDefaultMode() {
+  const m = localStorage.getItem(MODE_KEY);
+  return (m === 'claude' || m === 'codex') ? m : 'aramis';
+}
+function getDefaultCwd() {
+  return localStorage.getItem(CWD_KEY) || '';
+}
+
 export const useChatStore = defineStore('chat', {
   state: () => ({
     chats: [],
     activeId: null,
-    messages: [],       // canonical view of current chat
+    activeMode: 'aramis',
+    activeCwd: '',
+    activeExternalSessionId: null,
+    messages: [],
     streaming: false,
-    phase: null,        // { phase: 'connecting'|'thinking'|'responding'|'tool_running', tool? }
-    pendingAsk: null,   // { tool_call_id, question, sensitive }
+    phase: null,
+    pendingAsk: null,
     abortStream: null,
+    cliMeta: null,           // { session_id, model, cwd, total_cost_usd, duration_ms, ... }
+    // composer-level mode (persisted across sessions). Applied on new chat & on send.
+    composerMode: getDefaultMode(),
+    composerCwd: getDefaultCwd(),
+    // tools the user has detected on this host (from /api/cli/detect)
+    detectedCLIs: null,
   }),
+  getters: {
+    pinnedChats(state) { return state.chats.filter((c) => c.pinned); },
+    unpinnedChats(state) { return state.chats.filter((c) => !c.pinned); },
+  },
   actions: {
+    setComposerMode(mode) {
+      this.composerMode = mode;
+      localStorage.setItem(MODE_KEY, mode);
+    },
+    setComposerCwd(cwd) {
+      this.composerCwd = cwd;
+      localStorage.setItem(CWD_KEY, cwd);
+    },
+
+    async detectCLIs() {
+      try { const r = await api.detectCLIs(); this.detectedCLIs = r.tools; }
+      catch { this.detectedCLIs = []; }
+    },
+
     async loadChats() {
       const { chats } = await api.listChats();
       this.chats = chats;
     },
-    async createChat() {
-      const chat = await api.createChat('');
+    async createChat(opts = {}) {
+      const mode = opts.mode || this.composerMode || 'aramis';
+      const cwd = opts.cwd ?? this.composerCwd ?? '';
+      const chat = await api.createChat({
+        title: opts.title || '',
+        mode,
+        cwd: cwd || null,
+        external_session_id: opts.external_session_id || null,
+      });
       this.chats.unshift(chat);
       await this.openChat(chat.id);
       return chat.id;
@@ -25,13 +70,35 @@ export const useChatStore = defineStore('chat', {
     async openChat(id) {
       const { chat, messages, pending_ask } = await api.getChat(id);
       this.activeId = chat.id;
+      this.activeMode = chat.mode || 'aramis';
+      this.activeCwd = chat.cwd || '';
+      this.activeExternalSessionId = chat.external_session_id || null;
       this.messages = rebuildTimeline(messages);
       this.pendingAsk = pending_ask || null;
       this.phase = null;
+      this.cliMeta = null;
     },
     async renameChat(id, title) {
       await api.renameChat(id, title);
       const c = this.chats.find((x) => x.id === id); if (c) c.title = title;
+    },
+    async togglePin(id) {
+      const c = this.chats.find((x) => x.id === id); if (!c) return;
+      const next = c.pinned ? 0 : 1;
+      await api.updateChat(id, { pinned: !!next });
+      c.pinned = next;
+      // Re-sort
+      this.chats.sort((a, b) => (b.pinned - a.pinned) || (b.updated_at - a.updated_at));
+    },
+    async setChatMode(id, mode) {
+      await api.updateChat(id, { mode });
+      const c = this.chats.find((x) => x.id === id); if (c) c.mode = mode;
+      if (this.activeId === id) this.activeMode = mode;
+    },
+    async setChatCwd(id, cwd) {
+      await api.updateChat(id, { cwd });
+      const c = this.chats.find((x) => x.id === id); if (c) c.cwd = cwd;
+      if (this.activeId === id) this.activeCwd = cwd;
     },
     async deleteChat(id) {
       await api.deleteChat(id);
@@ -41,6 +108,7 @@ export const useChatStore = defineStore('chat', {
         this.messages = [];
         this.pendingAsk = null;
         this.phase = null;
+        this.cliMeta = null;
       }
     },
 
@@ -51,7 +119,7 @@ export const useChatStore = defineStore('chat', {
     async sendMessage(content) {
       if (!this.activeId) await this.createChat();
       this.pushUser(content);
-      await this._stream({ content });
+      await this._stream({ content, mode: this.activeMode || this.composerMode });
     },
 
     async respondToAsk(answer) {
@@ -67,7 +135,6 @@ export const useChatStore = defineStore('chat', {
     },
 
     async approveToolCall(toolCallId, approved) {
-      // Update local UI state on the matching tool card
       for (const m of this.messages) {
         if (m.role === 'assistant' && Array.isArray(m.tool_calls)) {
           const tc = m.tool_calls.find((t) => t.id === toolCallId);
@@ -123,16 +190,20 @@ export const useChatStore = defineStore('chat', {
             case 'text_delta':
               assistant.content += data.text;
               break;
-            case 'tool_call':
-              assistant.tool_calls.push({
-                id: data.id,
-                name: data.name,
-                args: data.args,
-                status: 'pending',
-                stdout: '',
-                stderr: '',
-              });
+            case 'tool_call': {
+              // Update existing card (when adapter re-emits with resolved args) OR push new.
+              const existing = assistant.tool_calls.find((t) => t.id === data.id);
+              if (existing) {
+                existing.name = data.name || existing.name;
+                existing.args = data.args || existing.args;
+              } else {
+                assistant.tool_calls.push({
+                  id: data.id, name: data.name, args: data.args,
+                  status: 'pending', stdout: '', stderr: '',
+                });
+              }
               break;
+            }
             case 'tool_running': {
               const tc = assistant.tool_calls.find((t) => t.id === data.id);
               if (tc) tc.status = 'running';
@@ -156,7 +227,6 @@ export const useChatStore = defineStore('chat', {
               this.phase = null;
               break;
             case 'tool_approval': {
-              // Find or create the tool card and mark it as awaiting approval.
               let tc = assistant.tool_calls.find((t) => t.id === data.id);
               if (!tc) {
                 tc = { id: data.id, name: data.name, args: data.args, status: 'pending_approval', stdout: '', stderr: '' };
@@ -167,6 +237,10 @@ export const useChatStore = defineStore('chat', {
               this.phase = null;
               break;
             }
+            case 'cli_meta':
+              this.cliMeta = { ...(this.cliMeta || {}), ...data };
+              if (data.session_id) this.activeExternalSessionId = data.session_id;
+              break;
             case 'title_update': {
               const c = this.chats.find((x) => x.id === this.activeId);
               if (c) c.title = data.title;
@@ -189,11 +263,6 @@ export const useChatStore = defineStore('chat', {
   },
 });
 
-/**
- * Server returns OpenAI-shaped messages: user / assistant / tool. The chat view
- * wants assistant bubbles with their tool_calls + results materialized as one unit,
- * plus inline rendering of the user's "ask_user" answers. This rebuilds that view.
- */
 function rebuildTimeline(messages) {
   const out = [];
   const toolResultById = new Map();
@@ -212,7 +281,7 @@ function rebuildTimeline(messages) {
       if (m.tool_calls && m.tool_calls.length) {
         tcs = m.tool_calls.map((tc) => {
           let args = {};
-          try { args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}; } catch {}
+          try { args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : (tc.args || {}); } catch {}
           const r = toolResultById.get(tc.id);
           const card = {
             id: tc.id,
@@ -223,7 +292,6 @@ function rebuildTimeline(messages) {
             stdout: r?.parsed?.stdout || '',
             stderr: r?.parsed?.stderr || '',
           };
-          // ask_user answers materialize as a separate timeline row.
           if (card.name === 'ask_user' && r?.parsed?.answer != null) {
             out.push({
               role: 'ask_answer',

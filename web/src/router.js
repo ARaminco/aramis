@@ -7,6 +7,7 @@ const routes = [
   { path: '/login', name: 'login', component: () => import('./views/Login.vue'), meta: { public: true } },
   { path: '/chat/:id?', name: 'chat', component: () => import('./views/Chat.vue') },
   { path: '/settings', name: 'settings', component: () => import('./views/Settings.vue') },
+  { path: '/changelog', name: 'changelog', component: () => import('./views/Changelog.vue') },
 ];
 
 export const router = createRouter({ history: createWebHashHistory(), routes });

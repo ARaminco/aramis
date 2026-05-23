@@ -29,7 +29,11 @@ db.exec(`
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL,
+    mode TEXT NOT NULL DEFAULT 'aramis',
+    external_session_id TEXT,
+    cwd TEXT,
+    pinned INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS messages (
@@ -58,6 +62,16 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_memory_kind ON memory(kind);
 `);
+
+// --- runtime migrations: keep existing DBs working ---
+function safeAddColumn(table, decl) {
+  try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${decl}`); }
+  catch (e) { /* column probably already exists */ }
+}
+safeAddColumn('chats', "mode TEXT NOT NULL DEFAULT 'aramis'");
+safeAddColumn('chats', "external_session_id TEXT");
+safeAddColumn('chats', "cwd TEXT");
+safeAddColumn('chats', "pinned INTEGER NOT NULL DEFAULT 0");
 
 export function getSetting(key) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
