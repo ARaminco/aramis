@@ -24,6 +24,7 @@ import { updateRouter } from './routes/update.js';
 import { sshRouter } from './routes/ssh.js';
 import { ftpRouter } from './routes/ftp.js';
 import { uploadsRouter, uploadsStatic } from './routes/uploads.js';
+import { attachTerminal } from './services/terminal.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -136,11 +137,21 @@ export function startServer({ port, staticDir } = {}) {
   return new Promise((resolve) => {
     const server = app.listen(desiredPort, () => {
       const actual = server.address().port;
+      // Wire up the integrated-terminal WebSocket endpoint (/api/terminal).
+      // attachTerminal degrades gracefully if node-pty/ws aren't available.
+      const term = attachTerminal(server);
+      if (term.available) {
+        console.log(`[aramis] integrated terminal enabled (ws /api/terminal)`);
+      }
       console.log(`[aramis] server listening on http://localhost:${actual}`);
       resolve({
         port: actual,
         server,
-        close: () => new Promise((r) => server.close(r)),
+        terminal: term,
+        close: () => new Promise((r) => {
+          try { term.reap?.('server-close'); } catch {}
+          server.close(r);
+        }),
       });
     });
   });

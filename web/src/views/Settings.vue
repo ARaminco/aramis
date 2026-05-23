@@ -14,7 +14,7 @@ import {
   ArrowLeft, ArrowRight, Loader2, RefreshCw, Save, KeyRound, Cpu, ServerCog, Globe, LogOut, Sun, Moon,
   Database, Brain, Download, Trash2, Plus, FolderSearch, Folder, FolderOpen,
   Activity, Play, Check, X as XIcon, CircleSlash, Minus, Type, ScrollText, Bot,
-  GitBranch, ExternalLink, Sparkles,
+  GitBranch, ExternalLink, Sparkles, Palette, Search, Lock, Wrench, Settings as SettingsIcon, ChevronRight,
 } from 'lucide-vue-next';
 import AgentInstallerDialog from '@/components/AgentInstallerDialog.vue';
 import PathPicker from '@/components/PathPicker.vue';
@@ -238,16 +238,62 @@ async function refreshDetected() {
   catch { detectedCLIs.value = []; }
 }
 onMounted(refreshDetected);
+
+// ===== Settings nav (sidebar) ============================================
+// Section IDs map 1:1 to URL hashes so deep-links like /settings#ai work.
+// The nav order is intentional — most-used first, dangerous last.
+const SECTIONS = [
+  { id: 'appearance',  iconRef: Palette,    labelKey: 'sec_appearance' },
+  { id: 'workspace',   iconRef: FolderOpen, labelKey: 'default_workspace_section' },
+  { id: 'ai',          iconRef: Cpu,        labelKey: 'ai_section' },
+  { id: 'agents',      iconRef: Bot,        labelKey: 'cli_manager_section' },
+  { id: 'updates',     iconRef: Sparkles,   labelKey: 'updates_section' },
+  { id: 'diagnostics', iconRef: Activity,   labelKey: 'diagnostics_section' },
+  { id: 'system',      iconRef: ServerCog,  labelKey: 'system_section' },
+  { id: 'data',        iconRef: Database,   labelKey: 'data_section' },
+  { id: 'memory',      iconRef: Brain,      labelKey: 'memory_section' },
+  { id: 'changelog',   iconRef: ScrollText, labelKey: 'changelog_title' },
+  { id: 'security',    iconRef: Lock,       labelKey: 'sec_security' },
+];
+
+const activeSection = ref('appearance');
+const searchQuery = ref('');
+
+// Filter the nav by the search box: match label OR id.
+const filteredSections = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return SECTIONS;
+  return SECTIONS.filter((s) => {
+    const label = (t(s.labelKey) || '').toLowerCase();
+    return label.includes(q) || s.id.includes(q);
+  });
+});
+
+function pickSection(id) {
+  if (id === 'changelog') { goChangelog(); return; }
+  activeSection.value = id;
+  if (typeof location !== 'undefined') {
+    history.replaceState(null, '', `#${id}`);
+  }
+}
+
+// Honor #hash on mount + when the user pastes a deep-link.
+function pickFromHash() {
+  const h = (location.hash || '').replace(/^#/, '');
+  if (h && SECTIONS.some((s) => s.id === h)) activeSection.value = h;
+}
+onMounted(() => { pickFromHash(); window.addEventListener('hashchange', pickFromHash); });
 </script>
 
 <template>
   <div class="min-h-full bg-background text-foreground">
     <header class="main-header sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-sm">
-      <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2">
         <Button variant="ghost" size="icon" @click="goChat" :title="t('go_to_chat')">
           <ArrowRight v-if="locale === 'fa'" class="h-5 w-5" />
           <ArrowLeft v-else class="h-5 w-5" />
         </Button>
+        <SettingsIcon class="h-4 w-4 text-muted-foreground hidden sm:inline" />
         <h1 class="text-base font-semibold flex-1">{{ t('settings') }}</h1>
         <Button variant="ghost" size="icon" @click="toggleDark">
           <Sun v-if="dark" class="h-4 w-4" />
@@ -259,12 +305,67 @@ onMounted(refreshDetected);
       </div>
     </header>
 
-    <div class="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
+    <div class="max-w-6xl mx-auto p-3 sm:p-5">
+      <!-- Mobile section selector — horizontal scrolling tabs -->
+      <div class="md:hidden mb-3 -mx-3 px-3 overflow-x-auto scrollbar-thin">
+        <div class="flex gap-1.5 w-max">
+          <button
+            v-for="s in filteredSections" :key="s.id"
+            type="button"
+            :class="[
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition shrink-0',
+              activeSection === s.id ? 'bg-primary text-primary-foreground' : 'bg-card border border-border hover:bg-accent',
+            ]"
+            @click="pickSection(s.id)"
+          >
+            <component :is="s.iconRef" class="h-3.5 w-3.5" />
+            {{ t(s.labelKey) }}
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-4 sm:gap-6">
+        <!-- Sidebar (desktop) -->
+        <aside class="hidden md:flex flex-col gap-3 sticky top-[64px] self-start">
+          <div class="relative">
+            <Search class="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              :placeholder="t('settings_search')"
+              class="w-full rounded-md border border-input bg-transparent ltr:pl-8 rtl:pr-8 ltr:pr-2 rtl:pl-2 py-2 text-xs outline-none focus:border-primary"
+            />
+          </div>
+          <nav class="flex flex-col gap-0.5">
+            <button
+              v-for="s in filteredSections" :key="s.id"
+              type="button"
+              :class="[
+                'group flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-start transition',
+                activeSection === s.id
+                  ? 'bg-primary/10 text-primary border border-primary/30'
+                  : 'text-foreground/80 hover:bg-accent border border-transparent',
+              ]"
+              @click="pickSection(s.id)"
+            >
+              <component :is="s.iconRef" class="h-4 w-4 shrink-0" />
+              <span class="flex-1 min-w-0 truncate">{{ t(s.labelKey) }}</span>
+              <ChevronRight v-if="activeSection === s.id" class="h-3.5 w-3.5 opacity-60" :class="locale === 'fa' && 'rotate-180'" />
+            </button>
+            <p v-if="filteredSections.length === 0" class="text-xs text-muted-foreground italic px-2 py-3 text-center">
+              {{ t('settings_no_match') }}
+            </p>
+          </nav>
+        </aside>
+
+        <!-- Content -->
+        <div class="space-y-5 min-w-0">
       <!-- Language & theme -->
+      <section v-show="activeSection === 'appearance'" id="appearance">
       <Card class="p-4 sm:p-5 space-y-4">
         <div class="flex items-center gap-2">
-          <Globe class="h-4 w-4 text-muted-foreground" />
-          <h2 class="font-medium">{{ t('language') }}</h2>
+          <Palette class="h-4 w-4 text-muted-foreground" />
+          <h2 class="font-medium">{{ t('sec_appearance') }}</h2>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <button
@@ -311,8 +412,10 @@ onMounted(refreshDetected);
           <p class="text-[10px] text-muted-foreground mt-2 leading-5">{{ t('ui_scale_hint') }}</p>
         </div>
       </Card>
+      </section>
 
       <!-- Default workspace folder (moved from chat composer) -->
+      <section v-show="activeSection === 'workspace'" id="workspace">
       <Card class="p-4 sm:p-5 space-y-3">
         <div class="flex items-center gap-2">
           <FolderOpen class="h-4 w-4 text-muted-foreground" />
@@ -337,8 +440,10 @@ onMounted(refreshDetected);
         </div>
         <p v-if="!chat.composerCwd" class="text-[10px] text-muted-foreground italic">{{ t('default_workspace_empty') }}</p>
       </Card>
+      </section>
 
       <!-- Updates -->
+      <section v-show="activeSection === 'updates'" id="updates">
       <Card class="p-4 sm:p-5 space-y-3">
         <div class="flex items-center gap-2">
           <Sparkles class="h-4 w-4 text-muted-foreground" />
@@ -403,8 +508,10 @@ onMounted(refreshDetected);
           </div>
         </div>
       </Card>
+      </section>
 
       <!-- Coding-agent CLIs (Claude Code / Codex / Gemini) -->
+      <section v-show="activeSection === 'agents'" id="agents">
       <Card class="p-4 sm:p-5 space-y-3">
         <div class="flex items-center gap-2">
           <Bot class="h-4 w-4 text-muted-foreground" />
@@ -445,8 +552,10 @@ onMounted(refreshDetected);
           </button>
         </div>
       </Card>
+      </section>
 
       <!-- AI -->
+      <section v-show="activeSection === 'ai'" id="ai">
       <Card class="p-4 sm:p-5 space-y-4">
         <div class="flex items-center gap-2">
           <Cpu class="h-4 w-4 text-muted-foreground" />
@@ -542,8 +651,10 @@ onMounted(refreshDetected);
           </Button>
         </div>
       </Card>
+      </section>
 
       <!-- Diagnostics -->
+      <section v-show="activeSection === 'diagnostics'" id="diagnostics">
       <Card class="p-4 sm:p-5 space-y-4">
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <div class="flex items-center gap-2">
@@ -594,8 +705,10 @@ onMounted(refreshDetected);
         </ul>
         <p v-else class="text-sm text-muted-foreground">{{ t('diag_hint') }}</p>
       </Card>
+      </section>
 
       <!-- System info -->
+      <section v-show="activeSection === 'system'" id="system">
       <Card class="p-4 sm:p-5 space-y-3">
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
@@ -611,8 +724,10 @@ onMounted(refreshDetected);
         <pre v-if="sysInfo" class="text-[11px] sm:text-xs bg-muted/40 rounded-md p-3 overflow-auto max-h-80 scrollbar-thin" dir="ltr">{{ JSON.stringify(sysInfo, null, 2) }}</pre>
         <p v-else class="text-sm text-muted-foreground">{{ t('loading') }}</p>
       </Card>
+      </section>
 
       <!-- Data & memory -->
+      <section v-show="activeSection === 'data'" id="data">
       <Card class="p-4 sm:p-5 space-y-4">
         <div class="flex items-center gap-2">
           <Database class="h-4 w-4 text-muted-foreground" />
@@ -651,8 +766,10 @@ onMounted(refreshDetected);
           </Button>
         </div>
       </Card>
+      </section>
 
       <!-- Memory -->
+      <section v-show="activeSection === 'memory'" id="memory">
       <Card class="p-4 sm:p-5 space-y-4">
         <div class="flex items-center gap-2">
           <Brain class="h-4 w-4 text-muted-foreground" />
@@ -704,32 +821,23 @@ onMounted(refreshDetected);
           </div>
         </details>
       </Card>
+      </section>
 
-      <!-- Changelog & Version -->
-      <Card class="p-4 sm:p-5 space-y-3 cursor-pointer hover:bg-accent/40 transition" @click="goChangelog">
-        <div class="flex items-center gap-2">
-          <ScrollText class="h-4 w-4 text-muted-foreground" />
-          <h2 class="font-medium flex-1">{{ t('changelog_title') }}</h2>
-          <ArrowRight v-if="locale === 'fa'" class="h-4 w-4 text-muted-foreground rotate-180" />
-          <ArrowLeft v-else class="h-4 w-4 text-muted-foreground" />
-        </div>
-        <p class="text-xs text-muted-foreground leading-relaxed">{{ t('changelog_settings_blurb') }}</p>
-      </Card>
-
-      <!-- Password -->
+      <!-- Password / Security -->
+      <section v-show="activeSection === 'security'" id="security">
       <Card class="p-4 sm:p-5 space-y-3">
         <div class="flex items-center gap-2">
-          <KeyRound class="h-4 w-4 text-muted-foreground" />
+          <Lock class="h-4 w-4 text-muted-foreground" />
           <h2 class="font-medium">{{ t('change_password') }}</h2>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div class="space-y-1.5">
             <Label>{{ t('current_password') }}</Label>
-            <Input v-model="currentPw" type="password" />
+            <Input v-model="currentPw" type="password" autocomplete="current-password" />
           </div>
           <div class="space-y-1.5">
             <Label>{{ t('new_password') }}</Label>
-            <Input v-model="newPw" type="password" />
+            <Input v-model="newPw" type="password" autocomplete="new-password" />
           </div>
         </div>
         <p v-if="pwMsg" class="text-sm" :class="pwMsg.startsWith(t('error')) ? 'text-destructive' : 'text-emerald-500'">{{ pwMsg }}</p>
@@ -737,6 +845,9 @@ onMounted(refreshDetected);
           <Button variant="outline" @click="changePw">{{ t('change_password') }}</Button>
         </div>
       </Card>
+      </section>
+        </div>
+      </div>
     </div>
 
     <AgentInstallerDialog

@@ -208,6 +208,8 @@ export const useChatStore = defineStore('chat', {
               break;
             case 'tool_call': {
               // Update existing card (when adapter re-emits with resolved args) OR push new.
+              // We capture client-side timing here so ToolCallCard can render
+              // a duration without server changes.
               const existing = assistant.tool_calls.find((t) => t.id === data.id);
               if (existing) {
                 existing.name = data.name || existing.name;
@@ -216,13 +218,18 @@ export const useChatStore = defineStore('chat', {
                 assistant.tool_calls.push({
                   id: data.id, name: data.name, args: data.args,
                   status: 'pending', stdout: '', stderr: '',
+                  started_at: Date.now(),
+                  completed_at: null,
                 });
               }
               break;
             }
             case 'tool_running': {
               const tc = assistant.tool_calls.find((t) => t.id === data.id);
-              if (tc) tc.status = 'running';
+              if (tc) {
+                tc.status = 'running';
+                if (!tc.running_at) tc.running_at = Date.now();
+              }
               break;
             }
             case 'tool_output': {
@@ -235,7 +242,11 @@ export const useChatStore = defineStore('chat', {
             }
             case 'tool_result': {
               const tc = assistant.tool_calls.find((t) => t.id === data.id);
-              if (tc) { tc.status = 'done'; tc.result = data.result; }
+              if (tc) {
+                tc.status = 'done';
+                tc.result = data.result;
+                tc.completed_at = Date.now();
+              }
               break;
             }
             case 'ask_user':

@@ -11,6 +11,16 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-23
+
+- **Integrated terminal** — full-featured PTY-backed shell inside the chat, accessible via `⌘T` or the terminal button in the header. Backed by `node-pty` on the server and `xterm.js` in the browser, wired over a JWT-authenticated WebSocket (`/api/terminal`) with idle / heartbeat / 16-session caps. Persists across panel toggles, auto-reconnects once on accidental disconnect, follows light/dark theme, ships full-screen toggle, restart, and clear-screen controls.
+- **Settings overhaul** — single-page Settings replaced by a sidebar-nav layout with searchable section list and `#hash` deep-links. Sections: Appearance, Workspace, AI, Agents, Updates, Diagnostics, System, Data, Memory, Security. Horizontal-scrolling tabs on mobile; sticky sidebar on desktop. The old "Changelog" card became a nav item that opens `/changelog`.
+- **Richer tool-call rendering** — every Claude / Codex / Aramis tool step now shows live duration, syntax-highlighted file reads (15 languages via highlight.js), copy buttons on stdout/stderr/content, exit-code badges, and a unified-diff renderer with +/− counts for `apply_patch` / `edit_file` results.
+- **node-pty install fix** — `scripts/fix-pty-perms.mjs` runs as a postinstall hook and re-applies the executable bit on the per-platform `spawn-helper` binary that npm sometimes strips during prebuild extraction (long-standing bug). Avoids the `posix_spawnp failed` error on a fresh checkout.
+- **electron-builder** — added `node_modules/node-pty/**/*` to `asarUnpack` so the native module is loadable inside the packaged Electron app.
+- Lazy-loaded the terminal panel chunk so the chat bundle stays small for users who never open a terminal (`defineAsyncComponent`).
+- Integrated PTY terminal (xterm + node-pty), Settings overhaul with sidebar nav, richer tool-call rendering with diff/highlight/timing
+
 ## [0.5.7] - 2026-05-23
 
 - Removed the always-visible folder-path indicator and the cwd input from the chat composer; the default workspace folder now lives in **Settings → Default workspace folder** with the same path picker.

@@ -21,11 +21,15 @@ import GitPanel from '@/components/GitPanel.vue';
 import SessionImporter from '@/components/SessionImporter.vue';
 import HostsPanel from '@/components/HostsPanel.vue';
 import AgentInstallerDialog from '@/components/AgentInstallerDialog.vue';
+// TerminalPanel pulls in xterm + addons (~340KB gz). Lazy-loaded so the
+// chat bundle stays small for users who never open a terminal.
+import { defineAsyncComponent } from 'vue';
+const TerminalPanel = defineAsyncComponent(() => import('@/components/TerminalPanel.vue'));
 import {
   Plus, Send, Settings, Square, Trash2, Pencil, MessageSquare, Bot, User,
   Sparkles, AlertTriangle, Sun, Moon, LogOut, Menu, X as XIcon, Globe, Loader2, ArrowUp,
   Mic, MicOff, Pin, PinOff, Folder, GitBranch, Download, Search, Command as CommandIcon,
-  Cpu, Server, Image as ImageIcon, ExternalLink,
+  Cpu, Server, Image as ImageIcon, ExternalLink, TerminalSquare,
 } from 'lucide-vue-next';
 import { useVoiceInput } from '@/lib/voice';
 
@@ -52,6 +56,7 @@ const importerOpen = ref(false);
 const hostsPanelOpen = ref(false);
 const installerOpen = ref(false);
 const installerInitial = ref({ tool: 'claude', tab: 'overview' });
+const terminalOpen = ref(false);
 
 function openInstaller(payload = {}) {
   installerInitial.value = {
@@ -229,6 +234,8 @@ function onGlobalKey(e) {
   if (e.key.toLowerCase() === 'h') { e.preventDefault(); hostsPanelOpen.value = !hostsPanelOpen.value; return; }
   // ⌘I — install / configure agent CLIs
   if (e.key.toLowerCase() === 'i') { e.preventDefault(); openInstaller({ tab: 'overview' }); return; }
+  // ⌘T — toggle integrated terminal
+  if (e.key.toLowerCase() === 't') { e.preventDefault(); terminalOpen.value = !terminalOpen.value; return; }
   // ⌘/ — toggle theme
   if (e.key === '/') { e.preventDefault(); toggleDark(); return; }
 }
@@ -568,6 +575,9 @@ function fmtCost(usd) {
         <Button variant="ghost" size="icon" @click="hostsPanelOpen = true" :title="t('hosts_title') + ' (⌘H)'">
           <Server class="h-4 w-4" />
         </Button>
+        <Button variant="ghost" size="icon" @click="terminalOpen = !terminalOpen" :title="t('terminal_open') + ' (⌘T)'">
+          <TerminalSquare class="h-4 w-4" />
+        </Button>
         <Button v-if="store.activeId" variant="ghost" size="icon" class="md:hidden" @click="newChat">
           <Plus class="h-5 w-5" />
         </Button>
@@ -821,7 +831,7 @@ function fmtCost(usd) {
           <p v-if="voiceErrMsg" class="text-[10.5px] text-destructive mt-1.5 px-1 text-center sm:text-start">{{ voiceErrMsg }}</p>
           <p v-else class="text-[10.5px] text-muted-foreground mt-1.5 px-1 text-center sm:text-start leading-relaxed">
             {{ t('composer_hint') }}
-            <span class="hidden sm:inline" dir="ltr"> · ⌘K palette · ⌘N new · ⌘E files · ⌘G git · ⌘H hosts · ⌘I CLIs</span>
+            <span class="hidden sm:inline" dir="ltr"> · ⌘K palette · ⌘N new · ⌘T terminal · ⌘E files · ⌘G git · ⌘H hosts · ⌘I CLIs</span>
           </p>
         </div>
       </div>
@@ -847,6 +857,7 @@ function fmtCost(usd) {
       @update:open="(v) => installerOpen = v"
       @changed="store.detectCLIs()"
     />
+    <TerminalPanel :open="terminalOpen" @update:open="(v) => terminalOpen = v" />
 
     <Dialog
       :open="!!renameTarget"

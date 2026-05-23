@@ -413,6 +413,32 @@ const dict = {
     download_for_platform: 'دانلود برای',
     update_banner_msg: (v) => `نسخه ${v.latest} از Aramis در دسترسه (شما روی ${v.current} هستید).`,
     update_banner_view: 'مشاهده',
+
+    // Integrated terminal
+    terminal_title: 'ترمینال',
+    terminal_open: 'باز کردن ترمینال',
+    term_idle: 'آماده',
+    term_connecting: 'در حال اتصال…',
+    term_ready: 'متصل',
+    term_closed: 'بسته شد',
+    term_error: 'خطا',
+    term_clear: 'پاک کردن صفحه',
+    term_restart: 'راه‌اندازی مجدد شِل',
+    term_full: 'تمام‌صفحه',
+
+    // Settings sidebar
+    sec_appearance: 'ظاهر',
+    sec_security: 'امنیت',
+    settings_search: 'جستجو در تنظیمات…',
+    settings_no_match: 'نتیجه‌ای یافت نشد',
+
+    // ToolCallCard enhancements
+    tool_duration: 'مدت',
+    tool_tokens: 'توکن',
+    tool_copy: 'کپی',
+    diff_added: 'اضافه شده',
+    diff_removed: 'حذف شده',
+    diff_no_changes: 'تغییری نبود',
   },
   en: {
     app_name: 'Aramis',
@@ -812,6 +838,32 @@ const dict = {
     download_for_platform: 'Download for',
     update_banner_msg: (v) => `Aramis ${v.latest} is available (you're on ${v.current}).`,
     update_banner_view: 'View',
+
+    // Integrated terminal
+    terminal_title: 'Terminal',
+    terminal_open: 'Open terminal',
+    term_idle: 'idle',
+    term_connecting: 'connecting…',
+    term_ready: 'connected',
+    term_closed: 'closed',
+    term_error: 'error',
+    term_clear: 'Clear screen',
+    term_restart: 'Restart shell',
+    term_full: 'Full screen',
+
+    // Settings sidebar
+    sec_appearance: 'Appearance',
+    sec_security: 'Security',
+    settings_search: 'Search settings…',
+    settings_no_match: 'No matching section',
+
+    // ToolCallCard enhancements
+    tool_duration: 'duration',
+    tool_tokens: 'tokens',
+    tool_copy: 'copy',
+    diff_added: 'added',
+    diff_removed: 'removed',
+    diff_no_changes: 'no changes',
   },
 };
 
