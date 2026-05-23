@@ -13,8 +13,9 @@ import Badge from '@/components/ui/Badge.vue';
 import {
   ArrowLeft, ArrowRight, Loader2, RefreshCw, Save, KeyRound, Cpu, ServerCog, Globe, LogOut, Sun, Moon,
   Database, Brain, Download, Trash2, Plus,
-  Activity, Play, Check, X as XIcon, CircleSlash, Minus, Type, ScrollText,
+  Activity, Play, Check, X as XIcon, CircleSlash, Minus, Type, ScrollText, Bot,
 } from 'lucide-vue-next';
+import AgentInstallerDialog from '@/components/AgentInstallerDialog.vue';
 import { scale as uiScale, setScale, bumpScale, resetScale, SCALE_STEP } from '@/lib/ui-scale';
 
 const router = useRouter();
@@ -184,6 +185,22 @@ async function changePw() {
 function logout() { auth.logout(); router.replace('/login'); }
 function goChat() { router.push('/chat'); }
 function goChangelog() { router.push('/changelog'); }
+
+// CLI manager dialog
+const installerOpen = ref(false);
+const installerInitial = ref({ tool: 'claude', tab: 'overview' });
+function openInstaller(tool = 'claude', tab = 'overview') {
+  installerInitial.value = { tool, tab };
+  installerOpen.value = true;
+}
+
+// Probe which CLIs are installed so we can show a status badge in the card.
+const detectedCLIs = ref(null);
+async function refreshDetected() {
+  try { const r = await api.detectCLIs(); detectedCLIs.value = r.tools || []; }
+  catch { detectedCLIs.value = []; }
+}
+onMounted(refreshDetected);
 </script>
 
 <template>
@@ -255,6 +272,48 @@ function goChangelog() { router.push('/changelog'); }
             </Button>
           </div>
           <p class="text-[10px] text-muted-foreground mt-2 leading-5">{{ t('ui_scale_hint') }}</p>
+        </div>
+      </Card>
+
+      <!-- Coding-agent CLIs (Claude Code / Codex / Gemini) -->
+      <Card class="p-4 sm:p-5 space-y-3">
+        <div class="flex items-center gap-2">
+          <Bot class="h-4 w-4 text-muted-foreground" />
+          <h2 class="font-medium flex-1">{{ t('cli_manager_section') }}</h2>
+          <Button variant="ghost" size="icon" @click="refreshDetected" :title="t('fs_refresh')">
+            <RefreshCw class="h-4 w-4" />
+          </Button>
+        </div>
+        <p class="text-xs text-muted-foreground leading-relaxed">{{ t('cli_manager_blurb') }}</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button
+            v-for="x in [
+              { id: 'claude', label: 'Claude Code' },
+              { id: 'codex',  label: 'OpenAI Codex' },
+              { id: 'gemini', label: 'Gemini CLI' },
+            ]" :key="x.id"
+            type="button"
+            class="rounded-lg border border-border hover:bg-accent transition p-3 text-start group"
+            @click="openInstaller(x.id, 'overview')"
+          >
+            <div class="flex items-center gap-2">
+              <Bot class="h-4 w-4 text-primary shrink-0" />
+              <span class="text-sm font-medium flex-1 truncate">{{ x.label }}</span>
+              <Badge
+                v-if="detectedCLIs"
+                :variant="detectedCLIs.find((d) => d.id === x.id)?.installed ? 'success' : 'outline'"
+                class="text-[9px]"
+              >
+                {{ detectedCLIs.find((d) => d.id === x.id)?.installed ? t('installed') : t('not_installed') }}
+              </Badge>
+            </div>
+            <div v-if="detectedCLIs?.find((d) => d.id === x.id)?.version" class="text-[10px] text-muted-foreground font-mono mt-1.5" dir="ltr">
+              {{ detectedCLIs.find((d) => d.id === x.id).version }}
+            </div>
+            <div v-else class="text-[10px] text-muted-foreground mt-1.5">
+              {{ t('cli_manager_click_to_setup') }}
+            </div>
+          </button>
         </div>
       </Card>
 
@@ -550,5 +609,13 @@ function goChangelog() { router.push('/changelog'); }
         </div>
       </Card>
     </div>
+
+    <AgentInstallerDialog
+      :open="installerOpen"
+      :initial-tool="installerInitial.tool"
+      :initial-tab="installerInitial.tab"
+      @update:open="(v) => installerOpen = v"
+      @changed="refreshDetected"
+    />
   </div>
 </template>

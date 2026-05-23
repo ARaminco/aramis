@@ -61,6 +61,18 @@ export const api = {
   // External CLIs (Claude Code / Codex / ...)
   detectCLIs: () => request('/cli/detect'),
   listCLISessions: (tool, cwd) => request(`/cli/sessions/${encodeURIComponent(tool)}${cwd ? `?cwd=${encodeURIComponent(cwd)}` : ''}`),
+  cliInstallers: () => request('/cli/installers'),
+  cliInstallOptions: (tool) => request(`/cli/install-options/${encodeURIComponent(tool)}`),
+  cliGetConfig: (tool) => request(`/cli/config/${encodeURIComponent(tool)}`),
+  cliSetConfig: (tool, patch) => request(`/cli/config/${encodeURIComponent(tool)}`, { method: 'PUT', body: JSON.stringify(patch) }),
+  cliClearConfig: (tool) => request(`/cli/config/${encodeURIComponent(tool)}`, { method: 'DELETE' }),
+  // Streaming install/uninstall — returns an abort function.
+  cliInstallStream(tool, manager, onEvent) {
+    return cliStreamPlan('install', tool, manager, onEvent);
+  },
+  cliUninstallStream(tool, manager, onEvent) {
+    return cliStreamPlan('uninstall', tool, manager, onEvent);
+  },
 
   // Filesystem
   fsHome: () => request('/fs/home'),
@@ -194,3 +206,50 @@ export const api = {
     return () => ctrl.abort();
   },
 };
+
+// Shared SSE helper for /api/cli/install + /api/cli/uninstall.
+function cliStreamPlan(kind, tool, manager, onEvent) {
+  const ctrl = new AbortController();
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  fetch(`${BASE}/cli/${kind}/${encodeURIComponent(tool)}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ manager }),
+    signal: ctrl.signal,
+  }).then(async (res) => {
+    if (!res.ok || !res.body) {
+      const t = await res.text().catch(() => '');
+      onEvent({ event: 'error', data: { message: t || res.statusText } });
+      onEvent({ event: 'done', data: {} });
+      return;
+    }
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) !== -1) {
+        const frame = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        let event = 'message', dataStr = '';
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('event: ')) event = line.slice(7).trim();
+          else if (line.startsWith('data: ')) dataStr += line.slice(6);
+        }
+        if (!dataStr) continue;
+        let data; try { data = JSON.parse(dataStr); } catch { data = { raw: dataStr }; }
+        onEvent({ event, data });
+      }
+    }
+  }).catch((err) => {
+    if (ctrl.signal.aborted) return;
+    onEvent({ event: 'error', data: { message: err.message || String(err) } });
+    onEvent({ event: 'done', data: {} });
+  });
+  return () => ctrl.abort();
+}

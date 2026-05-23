@@ -1,13 +1,13 @@
 <script setup>
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import { Bot, Sparkles, Cpu, ChevronDown, Check, AlertCircle, Folder } from 'lucide-vue-next';
+import { Bot, Sparkles, Cpu, ChevronDown, Check, AlertCircle, Folder, Download, Cog } from 'lucide-vue-next';
 import { useChatStore } from '@/stores/chat';
 import { useI18n } from '@/lib/i18n';
 
 const props = defineProps({
   mode: { type: String, default: 'aramis' },
 });
-const emit = defineEmits(['update:mode', 'change-cwd']);
+const emit = defineEmits(['update:mode', 'change-cwd', 'open-installer']);
 
 const store = useChatStore();
 const { t } = useI18n();
@@ -29,10 +29,20 @@ const isInstalled = (id) => {
 const current = computed(() => MODES.find((m) => m.id === props.mode) || MODES[0]);
 
 async function setMode(m) {
+  if (m.id === props.mode) { open.value = false; return; }
+  if (!isInstalled(m.id)) {
+    // Tool not installed — open the installer instead of failing silently.
+    open.value = false;
+    emit('open-installer', { tool: m.id, tab: 'install' });
+    return;
+  }
   open.value = false;
-  if (m.id === props.mode) return;
-  if (!isInstalled(m.id)) return;
   emit('update:mode', m.id);
+}
+
+function openInstaller(m, tab = 'configure') {
+  open.value = false;
+  emit('open-installer', { tool: m.id, tab });
 }
 
 function onCwdChange(e) {
@@ -84,33 +94,56 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocClick));
         <div class="px-2 pt-1 pb-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
           {{ t('agent_backend') }}
         </div>
-        <button
+        <div
           v-for="m in MODES" :key="m.id"
-          type="button"
-          @click="setMode(m)"
-          :disabled="!isInstalled(m.id)"
           :class="[
-            'w-full flex items-start gap-2.5 rounded-lg px-2.5 py-2 text-start transition',
+            'group w-full flex items-start gap-2.5 rounded-lg px-2.5 py-2 transition',
             props.mode === m.id ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-accent',
-            !isInstalled(m.id) && 'opacity-50 cursor-not-allowed hover:bg-transparent',
           ]"
         >
-          <component :is="m.icon" class="h-4 w-4 text-primary shrink-0 mt-0.5" />
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="text-sm font-medium">{{ t(m.label) }}</span>
-              <Check v-if="props.mode === m.id" class="h-3 w-3 text-primary" />
-              <span
-                v-if="m.id !== 'aramis' && !isInstalled(m.id)"
-                class="text-[10px] text-amber-500 flex items-center gap-1"
-              >
-                <AlertCircle class="h-3 w-3" />
-                {{ t('not_installed') }}
-              </span>
+          <button
+            type="button"
+            @click="setMode(m)"
+            class="flex items-start gap-2.5 text-start flex-1 min-w-0"
+          >
+            <component :is="m.icon" class="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm font-medium">{{ t(m.label) }}</span>
+                <Check v-if="props.mode === m.id" class="h-3 w-3 text-primary" />
+                <span
+                  v-if="m.id !== 'aramis' && !isInstalled(m.id)"
+                  class="text-[10px] text-amber-500 flex items-center gap-1"
+                >
+                  <AlertCircle class="h-3 w-3" />
+                  {{ t('not_installed') }}
+                </span>
+              </div>
+              <div class="text-[11px] text-muted-foreground leading-snug">{{ t(m.sub) }}</div>
             </div>
-            <div class="text-[11px] text-muted-foreground leading-snug">{{ t(m.sub) }}</div>
+          </button>
+          <!-- Install / Configure buttons (only for external CLIs) -->
+          <div v-if="m.id !== 'aramis'" class="flex flex-col items-end gap-1 shrink-0">
+            <button
+              v-if="!isInstalled(m.id)"
+              type="button"
+              class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition"
+              @click.stop="openInstaller(m, 'install')"
+              :title="t('cli_install')"
+            >
+              <Download class="h-3 w-3" /> {{ t('cli_install') }}
+            </button>
+            <button
+              v-else
+              type="button"
+              class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition"
+              @click.stop="openInstaller(m, 'configure')"
+              :title="t('cli_tab_configure')"
+            >
+              <Cog class="h-3 w-3" /> {{ t('cli_tab_configure') }}
+            </button>
           </div>
-        </button>
+        </div>
 
         <div class="border-t border-border my-1 pt-2 px-2 space-y-1.5">
           <label class="block text-[10px] uppercase tracking-wider text-muted-foreground">

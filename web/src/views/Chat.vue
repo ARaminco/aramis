@@ -20,6 +20,7 @@ import FileExplorer from '@/components/FileExplorer.vue';
 import GitPanel from '@/components/GitPanel.vue';
 import SessionImporter from '@/components/SessionImporter.vue';
 import HostsPanel from '@/components/HostsPanel.vue';
+import AgentInstallerDialog from '@/components/AgentInstallerDialog.vue';
 import {
   Plus, Send, Settings, Square, Trash2, Pencil, MessageSquare, Bot, User,
   Sparkles, AlertTriangle, Sun, Moon, LogOut, Menu, X as XIcon, Globe, Loader2, ArrowUp,
@@ -49,6 +50,16 @@ const fileExplorerOpen = ref(false);
 const gitPanelOpen = ref(false);
 const importerOpen = ref(false);
 const hostsPanelOpen = ref(false);
+const installerOpen = ref(false);
+const installerInitial = ref({ tool: 'claude', tab: 'overview' });
+
+function openInstaller(payload = {}) {
+  installerInitial.value = {
+    tool: payload.tool || 'claude',
+    tab: payload.tab || 'overview',
+  };
+  installerOpen.value = true;
+}
 
 const voice = useVoiceInput();
 const voiceErrMsg = ref('');
@@ -128,6 +139,8 @@ function onGlobalKey(e) {
   if (e.key.toLowerCase() === 'g') { e.preventDefault(); gitPanelOpen.value = !gitPanelOpen.value; return; }
   // ⌘H — hosts panel (SSH + FTP)
   if (e.key.toLowerCase() === 'h') { e.preventDefault(); hostsPanelOpen.value = !hostsPanelOpen.value; return; }
+  // ⌘I — install / configure agent CLIs
+  if (e.key.toLowerCase() === 'i') { e.preventDefault(); openInstaller({ tab: 'overview' }); return; }
   // ⌘/ — toggle theme
   if (e.key === '/') { e.preventDefault(); toggleDark(); return; }
 }
@@ -588,7 +601,7 @@ function fmtCost(usd) {
         <div class="max-w-3xl mx-auto px-3 sm:px-6 py-3 space-y-2">
           <!-- Mode toolbar -->
           <div class="flex items-center gap-2 flex-wrap">
-            <ModeSwitcher :mode="currentMode" @update:mode="setMode" @change-cwd="setCwd" />
+            <ModeSwitcher :mode="currentMode" @update:mode="setMode" @change-cwd="setCwd" @open-installer="openInstaller" />
             <span v-if="store.activeCwd" class="text-[10.5px] text-muted-foreground font-mono truncate hidden sm:inline" dir="ltr" :title="store.activeCwd">
               📂 {{ store.activeCwd }}
             </span>
@@ -652,7 +665,7 @@ function fmtCost(usd) {
           <p v-if="voiceErrMsg" class="text-[10.5px] text-destructive mt-1.5 px-1 text-center sm:text-start">{{ voiceErrMsg }}</p>
           <p v-else class="text-[10.5px] text-muted-foreground mt-1.5 px-1 text-center sm:text-start leading-relaxed">
             {{ t('composer_hint') }}
-            <span class="hidden sm:inline" dir="ltr"> · ⌘K palette · ⌘N new · ⌘E files · ⌘G git · ⌘H hosts</span>
+            <span class="hidden sm:inline" dir="ltr"> · ⌘K palette · ⌘N new · ⌘E files · ⌘G git · ⌘H hosts · ⌘I CLIs</span>
           </p>
         </div>
       </div>
@@ -665,11 +678,19 @@ function fmtCost(usd) {
       @open-file-explorer="fileExplorerOpen = true"
       @open-git-panel="gitPanelOpen = true"
       @open-hosts-panel="hostsPanelOpen = true"
+      @open-installer="openInstaller"
     />
     <FileExplorer :open="fileExplorerOpen" @update:open="(v) => fileExplorerOpen = v" />
     <GitPanel :open="gitPanelOpen" @update:open="(v) => gitPanelOpen = v" />
     <HostsPanel :open="hostsPanelOpen" @update:open="(v) => hostsPanelOpen = v" />
     <SessionImporter :open="importerOpen" @update:open="(v) => importerOpen = v" @imported="store.loadChats()" />
+    <AgentInstallerDialog
+      :open="installerOpen"
+      :initial-tool="installerInitial.tool"
+      :initial-tab="installerInitial.tab"
+      @update:open="(v) => installerOpen = v"
+      @changed="store.detectCLIs()"
+    />
 
     <Dialog
       :open="!!renameTarget"

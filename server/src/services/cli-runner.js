@@ -19,6 +19,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { resolveCliRuntime } from './cli-config.js';
 
 const WHICH = process.platform === 'win32' ? 'where' : 'which';
 
@@ -196,6 +197,7 @@ export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, sig
     writer.send('done', {});
     return { ok: false };
   }
+  const runtime = resolveCliRuntime('claude');
   const args = [
     '--print',
     '--output-format', 'stream-json',
@@ -204,7 +206,9 @@ export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, sig
     '--dangerously-skip-permissions', // we already gate destructive ops at the chat UI level
   ];
   if (sessionId) args.push('--resume', sessionId);
-  if (model) args.push('--model', model);
+  const effectiveModel = model || runtime.model;
+  if (effectiveModel) args.push('--model', effectiveModel);
+  if (runtime.extraArgs && runtime.extraArgs.length) args.push(...runtime.extraArgs);
   args.push(prompt);
 
   writer.send('assistant_start', { iteration: 0 });
@@ -215,7 +219,7 @@ export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, sig
     try {
       child = spawn(bin, args, {
         cwd: cwd || process.cwd(),
-        env: { ...process.env, CLAUDE_DISABLE_TELEMETRY: '1' },
+        env: { ...process.env, CLAUDE_DISABLE_TELEMETRY: '1', ...runtime.env },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (e) {
@@ -424,9 +428,12 @@ export async function runCodex({ writer, prompt, cwd, sessionId, model, signal }
     return { ok: false };
   }
 
+  const runtime = resolveCliRuntime('codex');
   const args = ['exec'];
-  if (model) { args.push('-m', model); }
+  const effectiveModel = model || runtime.model;
+  if (effectiveModel) { args.push('-m', effectiveModel); }
   if (sessionId) { args.push('--resume', sessionId); }
+  if (runtime.extraArgs && runtime.extraArgs.length) args.push(...runtime.extraArgs);
   args.push('--', prompt);
 
   writer.send('assistant_start', { iteration: 0 });
@@ -437,7 +444,7 @@ export async function runCodex({ writer, prompt, cwd, sessionId, model, signal }
     try {
       child = spawn(bin, args, {
         cwd: cwd || process.cwd(),
-        env: process.env,
+        env: { ...process.env, ...runtime.env },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (e) {

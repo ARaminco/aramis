@@ -3,13 +3,13 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   Search, Plus, Settings, MessageSquare, Bot, Cpu, Sun, Moon, Globe,
-  Folder, GitBranch, ChevronRight, Server,
+  Folder, GitBranch, ChevronRight, Server, Download, Cog,
 } from 'lucide-vue-next';
 import { useChatStore } from '@/stores/chat';
 import { useI18n } from '@/lib/i18n';
 
 const props = defineProps({ open: Boolean });
-const emit = defineEmits(['update:open', 'open-file-explorer', 'open-git-panel', 'open-hosts-panel']);
+const emit = defineEmits(['update:open', 'open-file-explorer', 'open-git-panel', 'open-hosts-panel', 'open-installer']);
 
 const router = useRouter();
 const store = useChatStore();
@@ -83,6 +83,42 @@ const commands = computed(() => {
       hint: t('cmd_open_hosts_hint'),
       icon: Server,
       run: () => emit('open-hosts-panel'),
+    },
+    {
+      group: 'panels',
+      id: 'open-installer',
+      title: t('cmd_open_installer'),
+      hint: t('cmd_open_installer_hint'),
+      icon: Download,
+      run: () => emit('open-installer', { tab: 'overview' }),
+    },
+    {
+      group: 'actions',
+      id: 'install-claude',
+      title: t('cmd_install_claude'),
+      icon: Bot,
+      run: () => emit('open-installer', { tool: 'claude', tab: 'install' }),
+    },
+    {
+      group: 'actions',
+      id: 'install-codex',
+      title: t('cmd_install_codex'),
+      icon: Cpu,
+      run: () => emit('open-installer', { tool: 'codex', tab: 'install' }),
+    },
+    {
+      group: 'actions',
+      id: 'configure-claude',
+      title: t('cmd_configure_claude'),
+      icon: Cog,
+      run: () => emit('open-installer', { tool: 'claude', tab: 'configure' }),
+    },
+    {
+      group: 'actions',
+      id: 'configure-codex',
+      title: t('cmd_configure_codex'),
+      icon: Cog,
+      run: () => emit('open-installer', { tool: 'codex', tab: 'configure' }),
     },
     {
       group: 'actions',

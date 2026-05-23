@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-23
+
+- In-app installer & configurator for Claude Code / Codex / Gemini CLIs — detects npm/brew/pnpm/yarn, streams live install output, encrypted per-tool API key (auto-inherited from AI provider config), and injects env + model when spawning each CLI; new ⌘I shortcut and ModeSwitcher install/configure buttons
+
 ## [0.3.0] - 2026-05-23
 
 - Build fix: include arch in DMG title so arm64 + x64 builds don't collide on /Volumes/Aramis
