@@ -43,13 +43,17 @@ export function getCliConfig(tool) {
   let effectiveKeySource = null;
   if (hasKey) effectiveKeySource = 'cli_config';
   else if (ai.provider === meta.aramis_provider && ai.api_key) effectiveKeySource = 'ai_config';
+  // Only inherit model / base_url from the Aramis ai config when that config
+  // is for the SAME provider (otherwise we'd return "gpt-4.1-mini" as Claude's
+  // default model, which would make claude fail at runtime).
+  const inheritsAi = ai.provider === meta.aramis_provider;
   return {
     tool,
     meta: { key_env: meta.key_env, aramis_provider: meta.aramis_provider, default_model: meta.default_model },
     api_key_set: hasKey,
     api_key_masked: hasKey ? redact(decrypt(raw.api_key_enc)) : '',
-    model: raw.model || ai.model || meta.default_model || null,
-    base_url: raw.base_url || ai.base_url || null,
+    model: raw.model || (inheritsAi ? ai.model : null) || meta.default_model || null,
+    base_url: raw.base_url || (inheritsAi ? ai.base_url : null) || null,
     extra_args: raw.extra_args || '',
     effective_key_source: effectiveKeySource,
     inherits_from_ai_config: effectiveKeySource === 'ai_config',

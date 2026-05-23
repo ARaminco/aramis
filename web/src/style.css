@@ -150,6 +150,22 @@
   html.is-electron-mac .main-header a {
     -webkit-app-region: no-drag;
   }
+
+  /* Side panels are `position: fixed` with top:0 — they start at the screen edge
+     and therefore overlap the macOS traffic-light strip. Push them down on mac
+     so the close-X never gets covered by the drag region. Also make sure all
+     interactive controls inside any panel/overlay opt out of -webkit-app-region. */
+  html.is-electron-mac .aramis-panel { top: 28px !important; }
+  html.is-electron-mac aside,
+  html.is-electron-mac [role="dialog"] { -webkit-app-region: no-drag; }
+  html.is-electron-mac aside button,
+  html.is-electron-mac aside a,
+  html.is-electron-mac aside input,
+  html.is-electron-mac aside textarea,
+  html.is-electron-mac [role="dialog"] button,
+  html.is-electron-mac [role="dialog"] a,
+  html.is-electron-mac [role="dialog"] input,
+  html.is-electron-mac [role="dialog"] textarea { -webkit-app-region: no-drag; }
 }
 
 @layer utilities {

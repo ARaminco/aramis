@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-23
+
+- Mobile-first overhaul + Claude/Codex visibility: Dialog goes full-screen on phones (no horizontal scroll), all side panels reserve space for macOS traffic-lights so close X is never covered, Claude Code / Codex now stream stderr live (auth errors surface immediately) with empty-prompt guard and startup banner, model/base_url no longer cross-pollinate between providers, SessionImporter groups by project with collapsible folders and search, new PathPicker dialog for browsing the working directory, HostsPanel adds curated remote-install dropdown (Node.js via Volta/apt/dnf, Homebrew, Claude Code, Codex) — one click runs the canonical install script over SSH on the chosen host
+
 ## [0.4.2] - 2026-05-23
 
 - Auto-detect & one-click bootstrap: new path-discover service scans known install locations (Homebrew, nvm, Volta, Herd, asdf, fnm, Volta, etc.) on top of shell PATH expansion — packaged Electron app now finds npm/brew/pnpm even without manual setup; all CLI spawns use absolute resolved paths; bootstrap dialog suggests OS-specific install command (Homebrew on macOS, apt/dnf/pacman/zypper/apk on Linux, winget/choco on Windows) and offers one-click 'Open in Terminal' so sudo prompts work; Re-scan PATH button after the user finishes

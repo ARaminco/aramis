@@ -4,6 +4,7 @@ import {
   Server, Network, RefreshCw, X, Play, Plus, Pencil, Trash2, Loader2,
   Wifi, WifiOff, Terminal, Folder, FileText, ArrowUp, AlertTriangle, ChevronRight,
   CheckCircle2, XCircle, Save, Eye, Lock, KeyRound, ArrowRight, ArrowLeft, Globe,
+  Package, Zap,
 } from 'lucide-vue-next';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -41,6 +42,63 @@ async function loadSshHosts() {
     sshHosts.value = r.hosts || [];
   } catch (e) { err.value = e.message; sshHosts.value = []; }
   finally { loading.value = false; }
+}
+
+// ----- Remote install scripts -------------------------------------------
+//
+// Curated one-liners that run over the SSH host's shell. We deliberately use
+// `bash -lc 'set -euo pipefail; …'` so the user's profile is sourced and the
+// whole script fails-fast on any non-zero step.
+
+const REMOTE_SCRIPTS = [
+  {
+    id: 'node-volta', icon: 'volta',
+    label_key: 'hosts_remote_install_node',
+    cmd: `bash -lc 'set -e; curl https://get.volta.sh | bash; export VOLTA_HOME="$HOME/.volta"; export PATH="$VOLTA_HOME/bin:$PATH"; volta install node && node --version && npm --version'`,
+  },
+  {
+    id: 'node-apt',
+    label_key: 'hosts_remote_install_node_apt',
+    cmd: `bash -lc 'set -e; sudo apt-get update && sudo apt-get install -y nodejs npm && node --version && npm --version'`,
+  },
+  {
+    id: 'node-dnf',
+    label_key: 'hosts_remote_install_node_dnf',
+    cmd: `bash -lc 'set -e; sudo dnf install -y nodejs npm && node --version && npm --version'`,
+  },
+  {
+    id: 'brew',
+    label_key: 'hosts_remote_install_brew',
+    cmd: `bash -lc '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && brew --version'`,
+  },
+  {
+    id: 'claude',
+    label_key: 'hosts_remote_install_claude',
+    cmd: `bash -lc 'set -e; if ! command -v npm >/dev/null 2>&1; then echo "npm not found — install Node.js first" >&2; exit 1; fi; npm install -g @anthropic-ai/claude-code --loglevel=error && claude --version'`,
+  },
+  {
+    id: 'codex',
+    label_key: 'hosts_remote_install_codex',
+    cmd: `bash -lc 'set -e; if ! command -v npm >/dev/null 2>&1; then echo "npm not found — install Node.js first" >&2; exit 1; fi; npm install -g @openai/codex --loglevel=error && codex --version'`,
+  },
+];
+
+const remoteScriptByHost = ref({});         // alias -> script id
+const remotePreviewByHost = ref({});        // alias -> bool (show command first)
+
+function getRemoteScript(alias) {
+  return remoteScriptByHost.value[alias] || REMOTE_SCRIPTS[0].id;
+}
+function setRemoteScript(alias, id) { remoteScriptByHost.value[alias] = id; }
+
+function runRemoteScript(h) {
+  const id = getRemoteScript(h.alias);
+  const script = REMOTE_SCRIPTS.find((s) => s.id === id);
+  if (!script) return;
+  // Reuse the SSH command runner — pump the curated command into the host
+  // and stream output to the same terminal card the user already knows.
+  sshCommandByHost.value[h.alias] = script.cmd;
+  runSshCommand(h);
 }
 
 async function probeHost(h) {
@@ -226,7 +284,7 @@ function close() {
   >
     <aside
       v-if="open"
-      class="fixed top-0 bottom-0 ltr:right-0 rtl:left-0 w-full sm:w-[520px] md:w-[640px] z-50 bg-card border-s border-border flex flex-col shadow-2xl"
+      class="aramis-panel fixed top-0 bottom-0 ltr:right-0 rtl:left-0 w-full sm:w-[520px] md:w-[640px] z-50 bg-card border-s border-border flex flex-col shadow-2xl pb-[env(safe-area-inset-bottom)]"
     >
       <header class="flex items-center gap-2 px-3 py-2.5 border-b border-border">
         <Server class="h-4 w-4 text-primary" />
@@ -319,6 +377,27 @@ function close() {
                   <XCircle v-else class="h-3 w-3" />
                   {{ getOutput(h.alias).probe.ok ? t('hosts_reachable') : t('hosts_unreachable') + ': ' + getOutput(h.alias).probe.error }}
                 </span>
+              </div>
+
+              <!-- Curated remote install scripts -->
+              <div class="space-y-1.5 rounded-md border border-amber-500/20 bg-amber-500/[0.03] p-2">
+                <div class="flex items-center gap-1.5">
+                  <Package class="h-3.5 w-3.5 text-amber-500" />
+                  <Label class="text-[10px] uppercase tracking-wider flex-1">{{ t('hosts_remote_install_title') }}</Label>
+                </div>
+                <p class="text-[10.5px] text-muted-foreground leading-snug">{{ t('hosts_remote_install_blurb') }}</p>
+                <div class="flex flex-col sm:flex-row gap-1.5">
+                  <Select
+                    :model-value="getRemoteScript(h.alias)"
+                    @update:model-value="(v) => setRemoteScript(h.alias, v)"
+                    class="text-xs flex-1"
+                  >
+                    <option v-for="s in REMOTE_SCRIPTS" :key="s.id" :value="s.id">{{ t(s.label_key) }}</option>
+                  </Select>
+                  <Button size="sm" :disabled="getOutput(h.alias).running" @click="runRemoteScript(h)">
+                    <Zap class="h-3 w-3" /> {{ t('hosts_remote_install_run') }}
+                  </Button>
+                </div>
               </div>
 
               <!-- Run command -->

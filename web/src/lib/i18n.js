@@ -340,6 +340,32 @@ const dict = {
     cli_bootstrap_rescan: 'اسکن مجدد PATH',
     cli_bootstrap_sudo: 'نیاز به sudo',
     cli_bootstrap_after_hint: 'بعد از پایان نصب، روی «اسکن مجدد PATH» بزنید تا Aramis ابزارهای جدید رو ببینه.',
+
+    // Path picker
+    path_picker_title: 'انتخاب پوشه',
+    path_picker_open: 'مرور پوشه‌ها',
+    path_picker_empty: 'پوشه‌ای نیست (یا فقط فایل داره).',
+    path_picker_hint: 'دوبار کلیک یا یک کلیک = ورود به پوشه. «انتخاب فعلی» مسیر بالا رو برمی‌گردونه.',
+    path_picker_select_current: 'انتخاب این پوشه',
+    cwd_picker_title: 'انتخاب پوشه‌ی کاری',
+
+    // Session importer
+    import_search_ph: 'جستجو در پیام، پروژه، یا شناسه سشن…',
+    import_adopt: 'دریافت',
+
+    // Remote install (Hosts panel)
+    hosts_remote_install_title: 'نصب از راه دور',
+    hosts_remote_install_blurb: 'یکی از اسکریپت‌های آماده رو روی این هاست SSH اجرا کن — مثل نصب Node.js یا Claude Code.',
+    hosts_remote_install_pick: 'یک اسکریپت انتخاب کنید…',
+    hosts_remote_install_run: 'اجرا روی این هاست',
+    hosts_remote_install_node: 'نصب Node.js (Volta — بدون sudo)',
+    hosts_remote_install_node_apt: 'نصب Node.js (apt — Debian/Ubuntu)',
+    hosts_remote_install_node_dnf: 'نصب Node.js (dnf — Fedora/RHEL)',
+    hosts_remote_install_claude: 'نصب Claude Code',
+    hosts_remote_install_codex: 'نصب OpenAI Codex',
+    hosts_remote_install_brew: 'نصب Homebrew',
+    hosts_remote_install_aramis: 'نصب Aramis (Linux server)',
+    hosts_remote_show: 'نمایش دستور قبل از اجرا',
     cli_cfg_clear: 'پاک‌سازی تنظیمات',
     cli_cfg_clear_confirm: 'تمام تنظیمات این CLI پاک می‌شه. مطمئنید؟',
     cli_cfg_keep_blank_to_keep: 'برای حفظ کلید فعلی خالی بگذارید',
@@ -678,6 +704,32 @@ const dict = {
     cli_bootstrap_rescan: 'Re-scan PATH',
     cli_bootstrap_sudo: 'needs sudo',
     cli_bootstrap_after_hint: 'When the install finishes, click "Re-scan PATH" so Aramis sees the new tools.',
+
+    // Path picker
+    path_picker_title: 'Pick a folder',
+    path_picker_open: 'Browse folders',
+    path_picker_empty: 'No subfolders here.',
+    path_picker_hint: 'Click a folder to enter it. "Select this folder" returns the path shown above.',
+    path_picker_select_current: 'Select this folder',
+    cwd_picker_title: 'Pick working directory',
+
+    // Session importer
+    import_search_ph: 'Search by message, project, or session id…',
+    import_adopt: 'Adopt',
+
+    // Remote install (Hosts panel)
+    hosts_remote_install_title: 'Remote install',
+    hosts_remote_install_blurb: 'Run a ready-made install script over SSH on this host — e.g. Node.js, Claude Code, or Codex.',
+    hosts_remote_install_pick: 'Pick a script…',
+    hosts_remote_install_run: 'Run on this host',
+    hosts_remote_install_node: 'Install Node.js (Volta — no sudo)',
+    hosts_remote_install_node_apt: 'Install Node.js (apt — Debian/Ubuntu)',
+    hosts_remote_install_node_dnf: 'Install Node.js (dnf — Fedora/RHEL)',
+    hosts_remote_install_claude: 'Install Claude Code',
+    hosts_remote_install_codex: 'Install OpenAI Codex',
+    hosts_remote_install_brew: 'Install Homebrew',
+    hosts_remote_install_aramis: 'Install Aramis (Linux server)',
+    hosts_remote_show: 'Show command before running',
     cli_cfg_clear: 'Clear settings',
     cli_cfg_clear_confirm: 'All saved settings for this CLI will be cleared. Continue?',
     cli_cfg_keep_blank_to_keep: 'Leave blank to keep the current key',

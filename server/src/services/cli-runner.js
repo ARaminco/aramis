@@ -186,6 +186,13 @@ export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, sig
     writer.send('done', {});
     return { ok: false };
   }
+  // Guard against empty prompts — claude --print "" exits without output and
+  // the UI ends up with a dead silent assistant bubble.
+  if (!prompt || !String(prompt).trim()) {
+    writer.send('error', { message: 'Claude Code requires a non-empty prompt. Type a message and try again.' });
+    writer.send('done', {});
+    return { ok: false };
+  }
   const runtime = resolveCliRuntime('claude');
   const args = [
     '--print',
@@ -202,6 +209,8 @@ export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, sig
 
   writer.send('assistant_start', { iteration: 0 });
   writer.send('phase', { phase: 'connecting' });
+  // Echo the spawn so the user (and future debugging) can see exactly what's about to run.
+  writer.send('text_delta', { text: `_starting Claude Code (model: ${effectiveModel || 'default'}${sessionId ? `, resuming ${sessionId.slice(0,8)}…` : ''})_\n\n` });
 
   return new Promise((resolve) => {
     let child;
@@ -313,9 +322,23 @@ export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, sig
     };
 
     lineReader(child.stdout, onLine);
-    // Stderr from claude is usually setup logs; surface as plain phase notes.
+
+    // Surface stderr LIVE so auth failures / progress notes appear immediately
+    // instead of vanishing into a silent run that ends with no message.
     let stderrBuf = '';
-    child.stderr.on('data', (d) => { stderrBuf += d.toString('utf8'); });
+    let stderrSurfaced = false;
+    child.stderr.on('data', (d) => {
+      const s = d.toString('utf8');
+      stderrBuf += s;
+      // Common auth errors: surface them as user-friendly text in the chat.
+      if (!stderrSurfaced && /no.*api.*key|not.*authenticated|please.*login|unauthorized|401/i.test(s)) {
+        stderrSurfaced = true;
+        writer.send('text_delta', { text: `\n**❗ Claude Code authentication needed.**\nRun \`claude login\` in your terminal, or set ANTHROPIC_API_KEY in Settings → Agent CLIs → Configure Claude Code.\n\n` });
+      } else if (s.trim()) {
+        // Stream other stderr as muted italic text so the user can see what's happening
+        writer.send('text_delta', { text: `_${s.trim().replace(/\n/g, ' ')}_\n` });
+      }
+    });
 
     const abort = () => { try { child.kill('SIGTERM'); } catch {} };
     if (signal) {
@@ -331,7 +354,11 @@ export async function runClaudeCode({ writer, prompt, cwd, sessionId, model, sig
 
     child.on('close', (code) => {
       if (!sawAnyOutput) {
-        writer.send('error', { message: `Claude Code exited with code ${code}${stderrBuf ? `:\n${stderrBuf.slice(0, 4000)}` : ''}` });
+        const detail = stderrBuf.trim() || 'no output and no error — is Claude Code authenticated? Try `claude login` in a terminal.';
+        writer.send('error', { message: `Claude Code exited with code ${code}:\n${detail.slice(0, 4000)}` });
+      } else if (code !== 0 && stderrBuf.trim()) {
+        // Trailing context if we got partial output then failed.
+        writer.send('text_delta', { text: `\n_(claude exited ${code}: ${stderrBuf.trim().slice(0, 400)})_` });
       }
       writer.send('done', { session_id: resultSessionId });
       resolve({ ok: code === 0, session_id: resultSessionId });
@@ -416,6 +443,11 @@ export async function runCodex({ writer, prompt, cwd, sessionId, model, signal }
     writer.send('done', {});
     return { ok: false };
   }
+  if (!prompt || !String(prompt).trim()) {
+    writer.send('error', { message: 'Codex requires a non-empty prompt. Type a message and try again.' });
+    writer.send('done', {});
+    return { ok: false };
+  }
 
   const runtime = resolveCliRuntime('codex');
   const args = ['exec'];
@@ -427,6 +459,7 @@ export async function runCodex({ writer, prompt, cwd, sessionId, model, signal }
 
   writer.send('assistant_start', { iteration: 0 });
   writer.send('phase', { phase: 'connecting' });
+  writer.send('text_delta', { text: `_starting Codex (model: ${effectiveModel || 'default'}${sessionId ? `, resuming ${sessionId.slice(0,8)}…` : ''})_\n\n` });
 
   return new Promise((resolve) => {
     let child;
@@ -445,12 +478,22 @@ export async function runCodex({ writer, prompt, cwd, sessionId, model, signal }
     writer.send('phase', { phase: 'responding' });
     let sawAnyOutput = false;
     let stderrBuf = '';
+    let authSurfaced = false;
 
     child.stdout.on('data', (d) => {
       sawAnyOutput = true;
       writer.send('text_delta', { text: d.toString('utf8') });
     });
-    child.stderr.on('data', (d) => { stderrBuf += d.toString('utf8'); });
+    child.stderr.on('data', (d) => {
+      const s = d.toString('utf8');
+      stderrBuf += s;
+      if (!authSurfaced && /no.*api.*key|not.*authenticated|please.*login|unauthorized|401|missing.*OPENAI/i.test(s)) {
+        authSurfaced = true;
+        writer.send('text_delta', { text: `\n**❗ Codex authentication needed.**\nRun \`codex login\` in your terminal, or set OPENAI_API_KEY in Settings → Agent CLIs → Configure Codex.\n\n` });
+      } else if (s.trim()) {
+        writer.send('text_delta', { text: `_${s.trim().replace(/\n/g, ' ')}_\n` });
+      }
+    });
 
     const abort = () => { try { child.kill('SIGTERM'); } catch {} };
     if (signal) {
@@ -465,9 +508,8 @@ export async function runCodex({ writer, prompt, cwd, sessionId, model, signal }
     });
     child.on('close', (code) => {
       if (!sawAnyOutput) {
-        writer.send('error', { message: `Codex exited with code ${code}${stderrBuf ? `:\n${stderrBuf.slice(0, 4000)}` : ''}` });
-      } else if (stderrBuf.trim()) {
-        writer.send('text_delta', { text: `\n\n_stderr: ${stderrBuf.slice(0, 1000)}_` });
+        const detail = stderrBuf.trim() || 'no output and no error — is Codex authenticated? Try `codex login`.';
+        writer.send('error', { message: `Codex exited with code ${code}:\n${detail.slice(0, 4000)}` });
       }
       writer.send('done', {});
       resolve({ ok: code === 0 });

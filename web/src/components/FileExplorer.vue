@@ -137,7 +137,7 @@ function close() {
   >
     <aside
       v-if="open"
-      class="fixed top-0 bottom-0 ltr:right-0 rtl:left-0 w-full sm:w-[480px] md:w-[560px] z-50 bg-card border-s border-border flex flex-col shadow-2xl"
+      class="aramis-panel fixed top-0 bottom-0 ltr:right-0 rtl:left-0 w-full sm:w-[480px] md:w-[560px] z-50 bg-card border-s border-border flex flex-col shadow-2xl pb-[env(safe-area-inset-bottom)]"
     >
       <header class="flex items-center gap-2 px-3 py-2.5 border-b border-border">
         <Folder class="h-4 w-4 text-primary" />
