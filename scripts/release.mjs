@@ -30,6 +30,7 @@ const ROOT = path.resolve(__dirname, '..');
 const PKG_FILE = path.join(ROOT, 'package.json');
 const LOCK_FILE = path.join(ROOT, 'package-lock.json');
 const CHANGELOG_FILE = path.join(ROOT, 'CHANGELOG.md');
+const README_FILE = path.join(ROOT, 'README.md');
 
 const args = process.argv.slice(2);
 const flags = {
@@ -267,6 +268,30 @@ async function main() {
       if (lock.packages?.['']) lock.packages[''].version = newVersion;
       await writeFile(LOCK_FILE, JSON.stringify(lock, null, 2) + '\n', 'utf8');
       console.log(`${dim('✓')} package-lock.json bumped to ${newVersion}`);
+    }
+
+    // Rewrite README download links & version mentions. We keep this strictly
+    // pattern-based — only update artifact filenames and the inline
+    // "Current local version" line — so editorial prose stays untouched.
+    const readmeRaw = await readFile(README_FILE, 'utf8').catch(() => '');
+    if (readmeRaw) {
+      const before = readmeRaw;
+      let next = readmeRaw;
+      // Aramis-<old>-arm64.dmg → Aramis-<new>-arm64.dmg (also handles labels with v0.5.6)
+      next = next.replace(/Aramis-\d+\.\d+\.\d+(-arm64)?\.dmg/g, (m, arm) =>
+        `Aramis-${newVersion}${arm || ''}.dmg`);
+      // "Aramis v0.5.6" → "Aramis v0.5.7" inside markdown link text
+      next = next.replace(/Aramis v\d+\.\d+\.\d+/g, `Aramis v${newVersion}`);
+      // Aramis-Setup-<old>.exe → Aramis-Setup-<new>.exe
+      next = next.replace(/Aramis-Setup-\d+\.\d+\.\d+\.exe/g, `Aramis-Setup-${newVersion}.exe`);
+      // Aramis-<old>.AppImage → Aramis-<new>.AppImage
+      next = next.replace(/Aramis-\d+\.\d+\.\d+\.AppImage/g, `Aramis-${newVersion}.AppImage`);
+      // "Current local version: **v0.5.6**." line
+      next = next.replace(/Current local version:\s*\*\*v\d+\.\d+\.\d+\*\*/g, `Current local version: **v${newVersion}**`);
+      if (next !== before) {
+        await writeFile(README_FILE, next, 'utf8');
+        console.log(`${dim('✓')} README.md download links retargeted to v${newVersion}`);
+      }
     }
   }
 

@@ -70,6 +70,9 @@ export const api = {
   cliOpenTerminal: (command) => request('/cli/open-terminal', { method: 'POST', body: JSON.stringify({ command }) }),
   cliRefreshPath: () => request('/cli/refresh-path', { method: 'POST' }),
 
+  // GitHub release auto-update check
+  checkUpdate: (force = false) => request(`/update/check${force ? '?refresh=1' : ''}`),
+
   // Image uploads (chat composer paste / picker)
   uploadImage: async (file) => {
     const fd = new FormData();

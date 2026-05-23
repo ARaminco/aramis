@@ -11,6 +11,16 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.5.7] - 2026-05-23
+
+- Removed the always-visible folder-path indicator and the cwd input from the chat composer; the default workspace folder now lives in **Settings → Default workspace folder** with the same path picker.
+- Added one-shot Linux server installer (`scripts/install-linux.sh`) that auto-picks a free non-panel port (skips cPanel / DirectAdmin / aaPanel / Plesk / CyberPanel reserved ports), installs Node 20+ from NodeSource when missing, creates a dedicated `aramis` system user, writes a hardened systemd unit, and is idempotent for upgrades.
+- Added GitHub-release auto-update checker: new `/api/update/check` proxies the GitHub Releases API with 30-minute in-memory cache, plus a dismissible "new version" banner at the top of the chat and a per-platform download grid inside Settings → Updates.
+- Added `npm run publish:release` (`scripts/publish-release.mjs`) — verifies the working tree, pushes `main` and the matching `vX.Y.Z` tag to trigger the GitHub Actions release-build workflow.
+- `npm run release` now also rewrites the macOS DMG / Windows Setup / Linux AppImage download links and the "Current local version" line in `README.md` as part of the version bump, so the README never drifts behind a release.
+- README: documented the one-line Linux install command, the in-app auto-updater, and that Aramis ships native chat modes for Claude Code, OpenAI Codex, and Google Gemini CLI from one UI.
+- CLAUDE.md / AGENTS.md: added the GitHub-release publishing rule and the README-link auto-update invariant.
+
 ## [0.5.6] - 2026-05-23
 
 - Completed professional GitHub repository profile and community files

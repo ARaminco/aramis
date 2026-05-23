@@ -25,7 +25,7 @@ import {
   Plus, Send, Settings, Square, Trash2, Pencil, MessageSquare, Bot, User,
   Sparkles, AlertTriangle, Sun, Moon, LogOut, Menu, X as XIcon, Globe, Loader2, ArrowUp,
   Mic, MicOff, Pin, PinOff, Folder, GitBranch, Download, Search, Command as CommandIcon,
-  Cpu, Server, Image as ImageIcon,
+  Cpu, Server, Image as ImageIcon, ExternalLink,
 } from 'lucide-vue-next';
 import { useVoiceInput } from '@/lib/voice';
 
@@ -182,6 +182,19 @@ function toggleLocale() {
   setLocale(locale.value === 'fa' ? 'en' : 'fa');
 }
 
+// Update banner — dismissible per-version so we don't nag the user.
+const updateInfo = ref(null);
+const updateDismissedKey = 'aramis_update_dismissed';
+const updateVisible = computed(() => {
+  if (!updateInfo.value?.update_available) return false;
+  const dismissed = localStorage.getItem(updateDismissedKey);
+  return dismissed !== updateInfo.value.latest;
+});
+function dismissUpdate() {
+  if (updateInfo.value?.latest) localStorage.setItem(updateDismissedKey, updateInfo.value.latest);
+  updateInfo.value = null;
+}
+
 onMounted(async () => {
   await store.loadChats();
   store.detectCLIs(); // background — populates the mode switcher
@@ -189,6 +202,9 @@ onMounted(async () => {
   catch { aiConfigured.value = false; }
   try { const cl = await api.getChangelog(); if (cl?.version) appVersion.value = cl.version; }
   catch { /* changelog endpoint may be unavailable; ignore */ }
+
+  // Non-blocking: check GitHub for a newer release. Cached server-side for 30m.
+  try { updateInfo.value = await api.checkUpdate(); } catch { /* silently ignored */ }
 
   const id = route.params.id || store.chats[0]?.id;
   if (id) await openChat(id);
@@ -340,11 +356,6 @@ async function setMode(mode) {
     await store.setChatMode(store.activeId, mode);
   }
 }
-async function setCwd(cwd) {
-  store.setComposerCwd(cwd);
-  if (store.activeId) await store.setChatCwd(store.activeId, cwd);
-}
-
 // Filtered chat list
 const filteredChats = computed(() => {
   const q = search.value.trim().toLowerCase();
@@ -568,6 +579,18 @@ function fmtCost(usd) {
         <Button size="sm" variant="outline" @click="gotoSettings">{{ t('configure') }}</Button>
       </div>
 
+      <div v-if="updateVisible" class="bg-primary/10 border-b border-primary/30 px-4 py-2 flex items-center gap-2 text-xs">
+        <Sparkles class="h-4 w-4 text-primary shrink-0" />
+        <span class="flex-1">{{ t('update_banner_msg', { latest: updateInfo.latest, current: updateInfo.current }) }}</span>
+        <a :href="updateInfo.html_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-primary hover:underline font-medium">
+          {{ t('update_banner_view') }}
+          <ExternalLink class="h-3 w-3" />
+        </a>
+        <Button variant="ghost" size="icon" class="h-6 w-6" @click="dismissUpdate" :title="t('close')">
+          <XIcon class="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
       <!-- CLI session info bar -->
       <div v-if="isCLIMode && store.cliMeta" class="bg-card/40 border-b border-border px-4 py-1.5 flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap" dir="ltr">
         <span v-if="store.cliMeta.session_id">session: <code class="font-mono">{{ store.cliMeta.session_id.slice(0,12) }}…</code></span>
@@ -688,10 +711,7 @@ function fmtCost(usd) {
         <div class="max-w-3xl mx-auto px-3 sm:px-6 py-3 space-y-2">
           <!-- Mode toolbar -->
           <div class="flex items-center gap-2 flex-wrap">
-            <ModeSwitcher :mode="currentMode" @update:mode="setMode" @change-cwd="setCwd" @open-installer="openInstaller" />
-            <span v-if="store.activeCwd" class="text-[10.5px] text-muted-foreground font-mono truncate hidden sm:inline" dir="ltr" :title="store.activeCwd">
-              📂 {{ store.activeCwd }}
-            </span>
+            <ModeSwitcher :mode="currentMode" @update:mode="setMode" @open-installer="openInstaller" />
           </div>
 
           <div

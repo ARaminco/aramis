@@ -20,6 +20,7 @@ import { cliRouter } from './routes/cli.js';
 import { fsRouter } from './routes/fs.js';
 import { gitRouter } from './routes/git.js';
 import { changelogRouter } from './routes/changelog.js';
+import { updateRouter } from './routes/update.js';
 import { sshRouter } from './routes/ssh.js';
 import { ftpRouter } from './routes/ftp.js';
 import { uploadsRouter, uploadsStatic } from './routes/uploads.js';
@@ -96,6 +97,7 @@ export function createApp({ staticDir } = {}) {
   app.use('/api/fs', fsRouter);
   app.use('/api/git', gitRouter);
   app.use('/api/changelog', changelogRouter);
+  app.use('/api/update', updateRouter);
   app.use('/api/ssh', sshRouter);
   app.use('/api/ftp', ftpRouter);
   app.use('/api/uploads', uploadsRouter);

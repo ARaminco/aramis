@@ -1,14 +1,13 @@
 <script setup>
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import { Bot, Sparkles, Cpu, ChevronDown, Check, AlertCircle, Folder, Download, Cog, FolderSearch } from 'lucide-vue-next';
+import { Bot, Sparkles, Cpu, ChevronDown, Check, AlertCircle, Download, Cog } from 'lucide-vue-next';
 import { useChatStore } from '@/stores/chat';
 import { useI18n } from '@/lib/i18n';
-import PathPicker from '@/components/PathPicker.vue';
 
 const props = defineProps({
   mode: { type: String, default: 'aramis' },
 });
-const emit = defineEmits(['update:mode', 'change-cwd', 'open-installer']);
+const emit = defineEmits(['update:mode', 'open-installer']);
 
 const store = useChatStore();
 const { t } = useI18n();
@@ -44,15 +43,6 @@ async function setMode(m) {
 function openInstaller(m, tab = 'configure') {
   open.value = false;
   emit('open-installer', { tool: m.id, tab });
-}
-
-function onCwdChange(e) {
-  emit('change-cwd', e.target.value);
-}
-
-const pickerOpen = ref(false);
-function pickedCwd(p) {
-  emit('change-cwd', p);
 }
 
 // Detect CLIs once when the dropdown is first opened.
@@ -150,39 +140,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocClick));
           </div>
         </div>
 
-        <div class="border-t border-border my-1 pt-2 px-2 space-y-1.5">
-          <label class="block text-[10px] uppercase tracking-wider text-muted-foreground">
-            {{ t('working_dir') }}
-          </label>
-          <div class="flex items-center gap-1.5 rounded-md border border-border bg-card/50 px-2 py-1">
-            <Folder class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input
-              :value="store.activeCwd || store.composerCwd"
-              @change="onCwdChange"
-              dir="ltr"
-              :placeholder="t('cwd_placeholder')"
-              class="flex-1 min-w-0 bg-transparent border-0 outline-none text-xs font-mono"
-            />
-            <button
-              type="button"
-              class="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-              @click.stop="pickerOpen = true; open = false"
-              :title="t('path_picker_open')"
-            >
-              <FolderSearch class="h-3 w-3" />
-            </button>
-          </div>
-          <p class="text-[10px] text-muted-foreground leading-snug">{{ t('cwd_hint') }}</p>
-        </div>
       </div>
     </Transition>
   </div>
-
-  <PathPicker
-    :open="pickerOpen"
-    :initial-path="store.activeCwd || store.composerCwd"
-    :title="t('cwd_picker_title')"
-    @update:open="(v) => pickerOpen = v"
-    @pick="pickedCwd"
-  />
 </template>

@@ -16,8 +16,10 @@
   [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-16a34a.svg)](https://nodejs.org/)
   [![Electron](https://img.shields.io/badge/Desktop-Electron-38bdf8.svg)](https://www.electronjs.org/)
 
-  [Download](#download-aramis) · [Features](#features) · [Quick Start](#quick-start) · [macOS](#download-for-macos) · [Deploy](#self-hosted-web-deploy) · [Security](#security)
+  [Download](#download-aramis) · [Features](#features) · [Quick Start](#quick-start) · [macOS](#download-for-macos) · [Linux 1-line install](#linux-server-1-line-install) · [Deploy](#self-hosted-web-deploy) · [Security](#security)
 </div>
+
+> **One UI for every coding agent.** Aramis ships with native chat modes for **Claude Code CLI**, **OpenAI Codex CLI**, and **Google Gemini CLI** — install them from inside the app and switch between agents without leaving the chat. Bring your own keys; sessions, tool calls, and shell output stream into the same conversation.
 
 ---
 
@@ -29,8 +31,8 @@ Aramis is available as a desktop AI terminal app and as a self-hosted web app.
 
 | Platform | Recommended For | Download |
 | --- | --- | --- |
-| **macOS Apple Silicon** | M1, M2, M3, M4 Macs | [Download Aramis v0.5.6 ARM64 DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.6-arm64.dmg) |
-| **macOS Intel** | Intel-based Macs | [Download Aramis v0.5.6 Intel DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.6.dmg) |
+| **macOS Apple Silicon** | M1, M2, M3, M4 Macs | [Download Aramis v0.5.7 ARM64 DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.7-arm64.dmg) |
+| **macOS Intel** | Intel-based Macs | [Download Aramis v0.5.7 Intel DMG](https://github.com/ARaminco/aramis/releases/latest/download/Aramis-0.5.7.dmg) |
 | **All releases** | Older versions and release notes | [Open GitHub Releases](https://github.com/ARaminco/aramis/releases) |
 
 > If direct DMG links return 404, the latest GitHub Release is still being built. Open the [Releases page](https://github.com/ARaminco/aramis/releases) and download the newest macOS asset after the build finishes.
@@ -40,8 +42,25 @@ Aramis is available as a desktop AI terminal app and as a self-hosted web app.
 | Platform | Installer |
 | --- | --- |
 | Windows | [Latest Windows Setup](https://github.com/ARaminco/aramis/releases/latest) |
-| Linux | [Latest AppImage](https://github.com/ARaminco/aramis/releases/latest) |
-| Web / VPS | Run from source with Node.js and Express. |
+| Linux desktop | [Latest AppImage](https://github.com/ARaminco/aramis/releases/latest) |
+| Linux server (one-liner) | [`curl ... \| sudo bash`](#linux-server-1-line-install) — VPS, cPanel, DirectAdmin, aaPanel, Plesk safe |
+| Web / VPS (manual) | Run from source with Node.js and Express. |
+
+### Linux server 1-line install
+
+For a fresh VPS **or** a server already running a control panel (cPanel, DirectAdmin, aaPanel, Plesk, CyberPanel), this installer never touches your panel's ports, web roots, or services. It auto-picks a free non-panel port, installs Node 20+ if missing, clones the repo into `/opt/aramis`, creates a dedicated `aramis` system user, and registers a hardened `systemd` service.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ARaminco/aramis/main/scripts/install-linux.sh | sudo bash
+```
+
+The installer is **idempotent** — re-run the same command later to fast-forward to the newest tag, rebuild the bundle, and restart the service. Wire your subdomain through your panel's reverse-proxy UI to `127.0.0.1:<picked-port>`.
+
+Env overrides: `ARAMIS_PORT=5180`, `ARAMIS_DIR=/srv/aramis`, `ARAMIS_BRANCH=main`, `ARAMIS_NO_SERVICE=1` (build only — skip systemd). Full options inside [scripts/install-linux.sh](scripts/install-linux.sh).
+
+### Auto-update inside the app
+
+Every Aramis install pings the GitHub Releases API once on startup (cached server-side for 30 minutes, no analytics). When a newer release is published, a banner appears at the top of the chat with a direct link to the release notes and per-platform download buttons. You can also trigger a manual check from **Settings → Updates**.
 
 ## What Is Aramis?
 
@@ -78,13 +97,15 @@ Instead of copying commands from an AI chat into a terminal, Aramis keeps the AI
 - FTP host manager with encrypted credentials.
 - Diagnostics page for server, database, filesystem, shell, memory, and AI provider checks.
 
-### Multi-Engine AI
+### Multi-Engine AI — one UI for every coding agent
 
-- Built-in Aramis Agent mode.
-- Claude Code CLI mode.
-- OpenAI Codex CLI mode.
-- Session importer for existing CLI sessions.
-- Provider support for OpenAI, Anthropic, Groq, OpenRouter, Together, Ollama, and OpenAI-compatible APIs.
+- **Built-in Aramis Agent** mode (Plan → Investigate → Execute → Verify).
+- **Claude Code CLI** mode — full SSE streaming, tool calls, approvals.
+- **OpenAI Codex CLI** mode — same UI, same approval model.
+- **Google Gemini CLI** mode — install + configure from Settings.
+- In-app installer detects npm / brew / pnpm / pipx and runs the right install command per OS.
+- Session importer to resume existing CLI sessions inside Aramis.
+- Native AI providers for Aramis Agent mode: OpenAI, Anthropic, Groq, OpenRouter, Together, Ollama, and any OpenAI-compatible API.
 
 ### Desktop Experience
 
@@ -263,12 +284,13 @@ A tag push builds macOS, Windows, and Linux installers and attaches them to the 
 
 ## Release History
 
-Current local version: **v0.5.6**.
+Current local version: **v0.5.7**.
 
 Recent project milestones:
 
 | Version | Highlights |
 | --- | --- |
+| `v0.5.7` | Removed in-chat folder picker (moved to Settings); one-shot Linux server installer with panel-safe port detection; in-app GitHub auto-update checker; `npm run publish:release` script and README link auto-update. |
 | `v0.5.6` | Completed the GitHub repository profile, support docs, ownership metadata, and polished public presentation. |
 | `v0.5.5` | Removed Dependabot automation to keep repository attribution personal. |
 | `v0.5.4` | SEO-focused README, direct macOS download links, and fixed GitHub Release artifact uploads. |

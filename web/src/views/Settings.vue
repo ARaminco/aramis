@@ -12,15 +12,52 @@ import Select from '@/components/ui/Select.vue';
 import Badge from '@/components/ui/Badge.vue';
 import {
   ArrowLeft, ArrowRight, Loader2, RefreshCw, Save, KeyRound, Cpu, ServerCog, Globe, LogOut, Sun, Moon,
-  Database, Brain, Download, Trash2, Plus,
+  Database, Brain, Download, Trash2, Plus, FolderSearch, Folder, FolderOpen,
   Activity, Play, Check, X as XIcon, CircleSlash, Minus, Type, ScrollText, Bot,
+  GitBranch, ExternalLink, Sparkles,
 } from 'lucide-vue-next';
 import AgentInstallerDialog from '@/components/AgentInstallerDialog.vue';
+import PathPicker from '@/components/PathPicker.vue';
+import { useChatStore } from '@/stores/chat';
 import { scale as uiScale, setScale, bumpScale, resetScale, SCALE_STEP } from '@/lib/ui-scale';
 
 const router = useRouter();
 const auth = useAuthStore();
+const chat = useChatStore();
 const { t, locale, setLocale } = useI18n();
+
+// Default workspace folder — replaces the old in-chat cwd picker.
+const workspacePickerOpen = ref(false);
+function setWorkspace(p) { chat.setComposerCwd(p || ''); }
+function clearWorkspace() { chat.setComposerCwd(''); }
+
+// GitHub release update check.
+const updateState = ref({ loading: false, data: null, error: '' });
+async function checkUpdate(force = false) {
+  updateState.value.loading = true;
+  updateState.value.error = '';
+  try {
+    const r = await api.checkUpdate(force);
+    updateState.value.data = r;
+    if (r.error) updateState.value.error = r.error;
+  } catch (e) {
+    updateState.value.error = e.message;
+  } finally {
+    updateState.value.loading = false;
+  }
+}
+function platformLabel(hint) {
+  switch (hint) {
+    case 'macos-arm64': return 'macOS (Apple Silicon)';
+    case 'macos-x64': return 'macOS (Intel)';
+    case 'windows': return 'Windows';
+    case 'linux-appimage': return 'Linux (AppImage)';
+    case 'linux-deb': return 'Linux (.deb)';
+    case 'linux-rpm': return 'Linux (.rpm)';
+    case 'linux-tar': return 'Linux (tarball)';
+    default: return hint || 'Other';
+  }
+}
 
 const cfg = ref({
   provider: 'openai',
@@ -272,6 +309,98 @@ onMounted(refreshDetected);
             </Button>
           </div>
           <p class="text-[10px] text-muted-foreground mt-2 leading-5">{{ t('ui_scale_hint') }}</p>
+        </div>
+      </Card>
+
+      <!-- Default workspace folder (moved from chat composer) -->
+      <Card class="p-4 sm:p-5 space-y-3">
+        <div class="flex items-center gap-2">
+          <FolderOpen class="h-4 w-4 text-muted-foreground" />
+          <h2 class="font-medium flex-1">{{ t('default_workspace_section') }}</h2>
+        </div>
+        <p class="text-xs text-muted-foreground leading-relaxed">{{ t('default_workspace_hint') }}</p>
+        <div class="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5">
+          <Folder class="h-4 w-4 text-muted-foreground shrink-0" />
+          <Input
+            v-model="chat.composerCwd"
+            @change="(e) => setWorkspace(e.target.value)"
+            :placeholder="t('cwd_placeholder')"
+            dir="ltr"
+            class="flex-1 border-0 shadow-none bg-transparent font-mono text-xs px-0 focus-visible:ring-0"
+          />
+          <Button variant="ghost" size="icon" @click="workspacePickerOpen = true" :title="t('browse_folder')">
+            <FolderSearch class="h-4 w-4" />
+          </Button>
+          <Button v-if="chat.composerCwd" variant="ghost" size="icon" @click="clearWorkspace" :title="t('clear_workspace')">
+            <XIcon class="h-4 w-4" />
+          </Button>
+        </div>
+        <p v-if="!chat.composerCwd" class="text-[10px] text-muted-foreground italic">{{ t('default_workspace_empty') }}</p>
+      </Card>
+
+      <!-- Updates -->
+      <Card class="p-4 sm:p-5 space-y-3">
+        <div class="flex items-center gap-2">
+          <Sparkles class="h-4 w-4 text-muted-foreground" />
+          <h2 class="font-medium flex-1">{{ t('updates_section') }}</h2>
+          <Button size="sm" :disabled="updateState.loading" @click="checkUpdate(true)">
+            <Loader2 v-if="updateState.loading" class="h-4 w-4 animate-spin" />
+            <RefreshCw v-else class="h-4 w-4" />
+            {{ updateState.loading ? t('checking_updates') : t('check_for_updates') }}
+          </Button>
+        </div>
+        <p class="text-xs text-muted-foreground leading-relaxed">{{ t('updates_blurb') }}</p>
+
+        <!-- States -->
+        <div v-if="!updateState.data && !updateState.loading" class="text-xs text-muted-foreground italic">
+          {{ t('update_no_check') }}
+        </div>
+
+        <div v-else-if="updateState.error" class="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          {{ t('update_check_failed') }}: {{ updateState.error }}
+        </div>
+
+        <div v-else-if="updateState.data && !updateState.data.update_available" class="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+          <Check class="h-4 w-4 shrink-0" />
+          <span>{{ t('update_up_to_date') }}</span>
+          <code class="ms-auto font-mono text-[10px] text-muted-foreground" dir="ltr">v{{ updateState.data.current }}</code>
+        </div>
+
+        <div v-else-if="updateState.data && updateState.data.update_available" class="space-y-3">
+          <div class="rounded-lg border border-primary/40 bg-primary/5 px-3 py-2.5 space-y-1.5">
+            <div class="flex items-center gap-2">
+              <Sparkles class="h-4 w-4 text-primary" />
+              <span class="text-sm font-medium">{{ t('update_available_msg') }}</span>
+              <Badge variant="success" class="text-[10px]" dir="ltr">v{{ updateState.data.latest }}</Badge>
+              <code class="ms-auto font-mono text-[10px] text-muted-foreground" dir="ltr">→ from v{{ updateState.data.current }}</code>
+            </div>
+            <a
+              :href="updateState.data.html_url"
+              target="_blank"
+              rel="noopener"
+              class="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              {{ t('view_release_notes') }}
+              <ExternalLink class="h-3 w-3" />
+            </a>
+          </div>
+
+          <div v-if="updateState.data.assets?.length" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <a
+              v-for="a in updateState.data.assets" :key="a.name"
+              :href="a.browser_download_url"
+              target="_blank"
+              rel="noopener"
+              class="flex items-center gap-2 rounded-md border border-border hover:bg-accent px-2.5 py-2 text-xs transition"
+            >
+              <Download class="h-3.5 w-3.5 text-primary shrink-0" />
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ platformLabel(a.platform_hint) }}</div>
+                <div class="text-[10px] text-muted-foreground font-mono truncate" dir="ltr">{{ a.name }}</div>
+              </div>
+              <ExternalLink class="h-3 w-3 text-muted-foreground" />
+            </a>
+          </div>
         </div>
       </Card>
 
@@ -616,6 +745,14 @@ onMounted(refreshDetected);
       :initial-tab="installerInitial.tab"
       @update:open="(v) => installerOpen = v"
       @changed="refreshDetected"
+    />
+
+    <PathPicker
+      :open="workspacePickerOpen"
+      :initial-path="chat.composerCwd"
+      :title="t('default_workspace_section')"
+      @update:open="(v) => workspacePickerOpen = v"
+      @pick="setWorkspace"
     />
   </div>
 </template>

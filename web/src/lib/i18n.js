@@ -392,6 +392,27 @@ const dict = {
     docs: 'مستندات',
     saved: 'ذخیره شد',
     agent_gemini_sub: 'CLI رسمی Google Gemini — نیاز به نصب `gemini`',
+
+    // Default workspace (moved from chat composer to Settings)
+    default_workspace_section: 'پوشه‌ی کاری پیش‌فرض',
+    default_workspace_hint: 'برای چت‌های جدید کلود کد، کدکس یا جمنای، CLIها داخل این مسیر اجرا می‌شن. خالی = همان مسیر سرور.',
+    default_workspace_empty: 'بدون مسیر — CLI در پوشه‌ی پیش‌فرض سرور اجرا می‌شه.',
+    browse_folder: 'انتخاب از مرورگر پوشه',
+    clear_workspace: 'پاک کردن',
+
+    // Update checker
+    updates_section: 'به‌روزرسانی',
+    updates_blurb: 'بررسی نسخه‌ی جدید از روی GitHub Releases.',
+    check_for_updates: 'بررسی به‌روزرسانی',
+    checking_updates: 'در حال بررسی…',
+    update_up_to_date: 'به‌روز هستید — نسخه‌ی فعلی همان آخرین نسخه‌ست.',
+    update_available_msg: 'نسخه‌ی جدید موجود است',
+    update_no_check: 'هنوز بررسی نشده — روی «بررسی به‌روزرسانی» کلیک کنید.',
+    update_check_failed: 'بررسی به‌روزرسانی شکست خورد',
+    view_release_notes: 'مشاهده‌ی یادداشت‌های نسخه',
+    download_for_platform: 'دانلود برای',
+    update_banner_msg: (v) => `نسخه ${v.latest} از Aramis در دسترسه (شما روی ${v.current} هستید).`,
+    update_banner_view: 'مشاهده',
   },
   en: {
     app_name: 'Aramis',
@@ -770,6 +791,27 @@ const dict = {
     docs: 'docs',
     saved: 'saved',
     agent_gemini_sub: 'Google Gemini CLI — needs `gemini` on PATH.',
+
+    // Default workspace (moved from chat composer to Settings)
+    default_workspace_section: 'Default workspace folder',
+    default_workspace_hint: 'For new Claude Code / Codex / Gemini chats, CLIs run inside this folder. Leave empty to use the server cwd.',
+    default_workspace_empty: 'No path set — CLIs will run in the server\'s default folder.',
+    browse_folder: 'Browse folders',
+    clear_workspace: 'Clear',
+
+    // Update checker
+    updates_section: 'Updates',
+    updates_blurb: 'Check the GitHub Releases page for a newer Aramis version.',
+    check_for_updates: 'Check for updates',
+    checking_updates: 'Checking…',
+    update_up_to_date: 'You\'re up to date — running the latest published release.',
+    update_available_msg: 'New version available',
+    update_no_check: 'Not checked yet — click "Check for updates".',
+    update_check_failed: 'Update check failed',
+    view_release_notes: 'View release notes',
+    download_for_platform: 'Download for',
+    update_banner_msg: (v) => `Aramis ${v.latest} is available (you're on ${v.current}).`,
+    update_banner_view: 'View',
   },
 };
 
