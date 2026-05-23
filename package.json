@@ -1,13 +1,13 @@
 {
   "name": "aramis",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "private": true,
   "description": "AI-powered desktop and web terminal agent for sysadmin and DevOps workflows.",
   "author": {
     "name": "Aliasghar Ramin",
     "url": "https://aramin.co"
   },
-  "homepage": "https://github.com/aliasgharramin/aramis#readme",
+  "homepage": "https://github.com/ARaminco/aramis#readme",
   "license": "MIT",
   "main": "electron/main.js",
   "scripts": {
@@ -141,10 +141,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aliasgharramin/aramis.git"
+    "url": "git+https://github.com/ARaminco/aramis.git"
   },
   "bugs": {
-    "url": "https://github.com/aliasgharramin/aramis/issues"
+    "url": "https://github.com/ARaminco/aramis/issues"
   },
   "keywords": [
     "ai-agent",

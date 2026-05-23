@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.5.3] - 2026-05-23
+
+- Improved README SEO and macOS release downloads
+
 ## [0.5.2] - 2026-05-23
 
 - Prepared GitHub publishing configuration and refreshed README
