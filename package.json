@@ -88,7 +88,7 @@
       "identity": null
     },
     "dmg": {
-      "title": "Aramis ${version}",
+      "title": "Aramis ${version} ${arch}",
       "iconSize": 96,
       "window": {
         "width": 540,

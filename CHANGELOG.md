@@ -11,6 +11,8 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+- Build fix: include arch in DMG title so arm64 + x64 builds don't collide on /Volumes/Aramis
+
 ## [0.2.0] - 2026-05-23
 
 - Multi-engine agent backend: chat now switches between **Aramis Agent**,
