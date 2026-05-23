@@ -2,13 +2,14 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import {
   Folder, FolderOpen, FileText, ArrowUp, RefreshCw, Save, X, Loader2,
-  ChevronRight, ChevronDown, AlertTriangle, Home, Eye, EyeOff,
+  ChevronRight, ChevronDown, AlertTriangle, Home, Eye, EyeOff, FolderSearch,
 } from 'lucide-vue-next';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
 import CopyButton from '@/components/CopyButton.vue';
+import PathPicker from '@/components/PathPicker.vue';
 
 const props = defineProps({ open: Boolean });
 const emit = defineEmits(['update:open']);
@@ -42,6 +43,12 @@ async function init() {
     if (!cwd.value) cwd.value = c || h;
     await load();
   } catch (e) { err.value = e.message; }
+}
+
+const pickerOpen = ref(false);
+async function pickedPath(p) {
+  cwd.value = p;
+  await load();
 }
 
 async function load() {
@@ -163,8 +170,16 @@ function close() {
             v-model="cwd"
             @keydown.enter="load"
             dir="ltr"
-            class="flex-1 bg-transparent outline-none text-xs font-mono"
+            class="flex-1 min-w-0 bg-transparent outline-none text-xs font-mono"
           />
+          <button
+            type="button"
+            class="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+            @click="pickerOpen = true"
+            :title="t('path_picker_open')"
+          >
+            <FolderSearch class="h-3 w-3" />
+          </button>
           <CopyButton :text="cwd" size="xs" />
         </div>
       </div>
@@ -235,4 +250,11 @@ function close() {
       </div>
     </aside>
   </Transition>
+
+  <PathPicker
+    :open="pickerOpen"
+    :initial-path="cwd"
+    @update:open="(v) => pickerOpen = v"
+    @pick="pickedPath"
+  />
 </template>

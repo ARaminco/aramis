@@ -25,7 +25,7 @@ import {
   Plus, Send, Settings, Square, Trash2, Pencil, MessageSquare, Bot, User,
   Sparkles, AlertTriangle, Sun, Moon, LogOut, Menu, X as XIcon, Globe, Loader2, ArrowUp,
   Mic, MicOff, Pin, PinOff, Folder, GitBranch, Download, Search, Command as CommandIcon,
-  Cpu, Server,
+  Cpu, Server, Image as ImageIcon,
 } from 'lucide-vue-next';
 import { useVoiceInput } from '@/lib/voice';
 
@@ -98,6 +98,78 @@ function recDuration() {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+// ---- Image attachment / paste -------------------------------------------
+//
+// The composer accepts pasted/dropped/picked images. Each upload returns a
+// short URL (/uploads/<id>.<ext>) which we keep in `attachments` and inject
+// as markdown image syntax into the outgoing message just before send. Users
+// can remove a pending attachment via its preview chip.
+
+const attachments = ref([]); // [{ url, preview, mime, size, uploading? }]
+const imgInputRef = ref(null);
+const imgErr = ref('');
+
+function humanSize(n) {
+  if (n < 1024) return n + 'B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + 'KB';
+  return (n / 1024 / 1024).toFixed(2) + 'MB';
+}
+
+async function uploadImageFile(file) {
+  imgErr.value = '';
+  if (!file || !file.type?.startsWith('image/')) { imgErr.value = t('image_unsupported'); return; }
+  if (file.size > 10 * 1024 * 1024) { imgErr.value = t('image_too_big', { size: humanSize(file.size) }); return; }
+  // Local preview from the blob so the user sees it instantly.
+  const preview = URL.createObjectURL(file);
+  const placeholder = { preview, mime: file.type, size: file.size, uploading: true };
+  attachments.value.push(placeholder);
+  try {
+    const r = await api.uploadImage(file);
+    const idx = attachments.value.indexOf(placeholder);
+    if (idx >= 0) attachments.value[idx] = { url: r.url, preview, mime: r.mime, size: r.size, uploading: false };
+  } catch (e) {
+    imgErr.value = e.message;
+    attachments.value = attachments.value.filter((a) => a !== placeholder);
+    URL.revokeObjectURL(preview);
+  }
+}
+
+function onComposerPaste(e) {
+  const items = e.clipboardData?.items || [];
+  for (const it of items) {
+    if (it.kind === 'file' && it.type?.startsWith('image/')) {
+      const f = it.getAsFile();
+      if (f) { e.preventDefault(); uploadImageFile(f); }
+    }
+  }
+}
+function onComposerDrop(e) {
+  const files = e.dataTransfer?.files;
+  if (!files || files.length === 0) return;
+  const hasImage = Array.from(files).some((f) => f.type?.startsWith('image/'));
+  if (!hasImage) return;
+  e.preventDefault();
+  for (const f of files) { if (f.type?.startsWith('image/')) uploadImageFile(f); }
+}
+function pickImage() { imgInputRef.value?.click(); }
+function onImagePicked(e) {
+  const files = e.target?.files || [];
+  for (const f of files) uploadImageFile(f);
+  e.target.value = '';
+}
+function removeAttachment(a) {
+  attachments.value = attachments.value.filter((x) => x !== a);
+  try { URL.revokeObjectURL(a.preview); } catch {}
+}
+
+// Detect if a user-message body has markdown the renderer should process
+// (images, code fences, links). Plain prose stays as plain text so users
+// don't get surprised by accidental markdown interpretation.
+function userHasMarkdown(text) {
+  if (!text) return false;
+  return /(!\[[^\]]*\]\([^)]+\)|```|`[^`]+`|^\s*[-*+]\s|\[[^\]]+\]\([^)]+\))/m.test(text);
 }
 
 const dark = ref(document.documentElement.classList.contains('dark'));
@@ -181,14 +253,26 @@ async function pickChat(id) {
 
 async function send() {
   const txt = input.value.trim();
-  if (!txt || store.streaming) return;
+  const ready = attachments.value.filter((a) => a.url && !a.uploading);
+  if (!txt && ready.length === 0) return;
+  if (store.streaming) return;
+  // Refuse to send while uploads are in flight
+  if (attachments.value.some((a) => a.uploading)) return;
+
+  // Compose final message: text + a markdown image line per attachment.
+  const imageLines = ready.map((a) => `![image](${a.url})`).join('\n');
+  const finalText = [txt, imageLines].filter(Boolean).join('\n\n');
+
   input.value = '';
+  // Revoke object URLs so the browser frees the blob.
+  for (const a of attachments.value) { try { URL.revokeObjectURL(a.preview); } catch {} }
+  attachments.value = [];
   autoResize();
   if (!store.activeId) {
     const id = await store.createChat();
     router.replace({ name: 'chat', params: { id } });
   }
-  await store.sendMessage(txt);
+  await store.sendMessage(finalText);
 }
 
 async function answerAsk() {
@@ -521,12 +605,13 @@ function fmtCost(usd) {
             <div v-if="m.role === 'user'" class="group flex gap-2.5 justify-end animate-fade-in">
               <div class="flex flex-col items-end gap-1 max-w-[85%] sm:max-w-[80%]">
                 <div
-                  class="rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-3.5 py-2.5 whitespace-pre-wrap text-sm leading-relaxed shadow-sm"
+                  class="rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-3.5 py-2.5 text-sm leading-relaxed shadow-sm user-bubble"
                   dir="auto"
                 >
-                  {{ m.content }}
+                  <MessageContent v-if="userHasMarkdown(m.content)" :text="m.content" />
+                  <span v-else class="whitespace-pre-wrap">{{ m.content }}</span>
                 </div>
-                <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+                <div class="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition flex items-center gap-1">
                   <CopyButton :text="m.content" size="xs" />
                 </div>
               </div>
@@ -559,9 +644,9 @@ function fmtCost(usd) {
                 <div v-if="m.error" class="text-sm text-destructive flex items-center gap-2">
                   <AlertTriangle class="h-4 w-4" /> {{ m.error }}
                 </div>
-                <!-- Action row -->
-                <div v-if="(m.content || (m.tool_calls && m.tool_calls.length)) && !m._streaming" class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
-                  <CopyButton :text="m.content || ''" size="xs" :label="t('copy_message')" />
+                <!-- Action row — icon-only, appears on hover -->
+                <div v-if="(m.content || (m.tool_calls && m.tool_calls.length)) && !m._streaming" class="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition flex items-center gap-0.5">
+                  <CopyButton :text="m.content || ''" size="xs" />
                 </div>
                 <!-- Live phase pill while this bubble is the active one -->
                 <div
@@ -609,33 +694,80 @@ function fmtCost(usd) {
             </span>
           </div>
 
-          <div class="rounded-2xl border border-border bg-card shadow-sm flex items-end gap-1.5 p-1.5"
-               :class="voice.recording.value && 'ring-2 ring-red-500/40 border-red-500/40'">
+          <div
+            class="rounded-2xl border border-border bg-card shadow-sm p-1.5 flex flex-col gap-1.5"
+            :class="voice.recording.value && 'ring-2 ring-red-500/40 border-red-500/40'"
+            @dragover.prevent
+            @drop="onComposerDrop"
+          >
+            <!-- Pending image attachments (above the text row) -->
+            <div v-if="attachments.length" class="flex flex-wrap gap-1.5 px-1">
+              <div
+                v-for="(a, idx) in attachments" :key="idx"
+                class="relative rounded-md overflow-hidden border border-border bg-background h-16 w-16 group/att"
+              >
+                <img :src="a.preview" class="h-full w-full object-cover" alt="" />
+                <div v-if="a.uploading" class="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <Loader2 class="h-4 w-4 animate-spin text-white" />
+                </div>
+                <button
+                  type="button"
+                  @click="removeAttachment(a)"
+                  class="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-black/70 text-white inline-flex items-center justify-center opacity-0 group-hover/att:opacity-100 focus:opacity-100 transition"
+                  :title="t('image_remove')"
+                >
+                  <XIcon class="h-2.5 w-2.5" />
+                </button>
+              </div>
+            </div>
 
-            <!-- Mic button -->
-            <Button
-              :variant="voice.recording.value ? 'destructive' : 'ghost'"
-              size="icon"
-              class="rounded-xl shrink-0"
-              :disabled="store.streaming || voice.transcribing.value"
-              @click="toggleVoice"
-              :title="t('voice_input')"
-            >
-              <Loader2 v-if="voice.transcribing.value" class="h-4 w-4 animate-spin" />
-              <MicOff v-else-if="voice.recording.value" class="h-4 w-4" />
-              <Mic v-else class="h-4 w-4" />
-            </Button>
+            <!-- Text + action row -->
+            <div class="flex items-end gap-1.5">
+              <!-- Attach image button -->
+              <Button
+                variant="ghost"
+                size="icon"
+                class="rounded-xl shrink-0"
+                :disabled="store.streaming"
+                @click="pickImage"
+                :title="t('image_attach')"
+              >
+                <ImageIcon class="h-4 w-4" />
+              </Button>
+              <input
+                ref="imgInputRef"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                multiple
+                class="hidden"
+                @change="onImagePicked"
+              />
 
-            <Textarea
-              ref="composerRef"
-              v-model="input"
-              @keydown="onComposerKeydown"
-              @input="autoResize"
-              rows="1"
-              :placeholder="voice.recording.value ? t('voice_transcribing') : t('composer_placeholder')"
-              :disabled="store.streaming || !!store.pendingAsk || voice.recording.value || voice.transcribing.value"
-              class="border-0 focus-visible:ring-0 shadow-none resize-none min-h-[40px] max-h-[200px] bg-transparent py-2 px-3"
-            />
+              <!-- Mic button -->
+              <Button
+                :variant="voice.recording.value ? 'destructive' : 'ghost'"
+                size="icon"
+                class="rounded-xl shrink-0"
+                :disabled="store.streaming || voice.transcribing.value"
+                @click="toggleVoice"
+                :title="t('voice_input')"
+              >
+                <Loader2 v-if="voice.transcribing.value" class="h-4 w-4 animate-spin" />
+                <MicOff v-else-if="voice.recording.value" class="h-4 w-4" />
+                <Mic v-else class="h-4 w-4" />
+              </Button>
+
+              <Textarea
+                ref="composerRef"
+                v-model="input"
+                @keydown="onComposerKeydown"
+                @input="autoResize"
+                @paste="onComposerPaste"
+                rows="1"
+                :placeholder="voice.recording.value ? t('voice_transcribing') : t('composer_placeholder')"
+                :disabled="store.streaming || !!store.pendingAsk || voice.recording.value || voice.transcribing.value"
+                class="border-0 focus-visible:ring-0 shadow-none resize-none min-h-[40px] max-h-[200px] bg-transparent py-2 px-3 flex-1"
+              />
 
             <!-- Recording indicator -->
             <div v-if="voice.recording.value" class="flex items-center gap-1.5 px-2 text-xs text-red-500 self-center shrink-0">
@@ -657,13 +789,15 @@ function fmtCost(usd) {
               v-else
               size="icon"
               class="rounded-xl shrink-0"
-              :disabled="!input.trim() || !!store.pendingAsk || voice.recording.value || voice.transcribing.value"
+              :disabled="(!input.trim() && attachments.filter((a) => a.url && !a.uploading).length === 0) || attachments.some((a) => a.uploading) || !!store.pendingAsk || voice.recording.value || voice.transcribing.value"
               @click="send"
               :title="t('send')"
             >
               <ArrowUp class="h-4 w-4" />
             </Button>
+            </div>
           </div>
+          <p v-if="imgErr" class="text-[10.5px] text-destructive mt-1.5 px-1 text-center sm:text-start">{{ imgErr }}</p>
           <p v-if="voiceErrMsg" class="text-[10.5px] text-destructive mt-1.5 px-1 text-center sm:text-start">{{ voiceErrMsg }}</p>
           <p v-else class="text-[10.5px] text-muted-foreground mt-1.5 px-1 text-center sm:text-start leading-relaxed">
             {{ t('composer_hint') }}

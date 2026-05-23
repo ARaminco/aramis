@@ -366,6 +366,20 @@ const dict = {
     hosts_remote_install_brew: 'نصب Homebrew',
     hosts_remote_install_aramis: 'نصب Aramis (Linux server)',
     hosts_remote_show: 'نمایش دستور قبل از اجرا',
+
+    // CLI login (Configure tab in AgentInstallerDialog)
+    cli_login_title: (v) => `ورود به ${v.tool}`,
+    cli_login_blurb: (v) => `برای احراز هویت، دستور \`${v.cmd}\` رو در ترمینال سیستم اجرا کنید. Aramis پنجره رو خودش باز می‌کنه — کافیه فرآیند OAuth/Login رو تکمیل کنید.`,
+    cli_login_run: (v) => `اجرای ${v.tool} login`,
+    cli_login_install_first: 'ابتدا این CLI رو از تب «نصب» نصب کنید، بعد دکمه‌ی ورود اینجا فعال می‌شه.',
+
+    // Image paste
+    image_attach: 'افزودن عکس',
+    image_paste_hint: 'برای پیوست عکس، اون رو در composer paste کن یا روی آیکون کلیک کن.',
+    image_too_big: (v) => `عکس خیلی بزرگه (${v.size}). حداکثر 10MB.`,
+    image_unsupported: 'فقط PNG / JPG / WEBP / GIF / AVIF پشتیبانی می‌شه.',
+    image_remove: 'حذف',
+    image_uploading: 'در حال آپلود…',
     cli_cfg_clear: 'پاک‌سازی تنظیمات',
     cli_cfg_clear_confirm: 'تمام تنظیمات این CLI پاک می‌شه. مطمئنید؟',
     cli_cfg_keep_blank_to_keep: 'برای حفظ کلید فعلی خالی بگذارید',
@@ -730,6 +744,20 @@ const dict = {
     hosts_remote_install_brew: 'Install Homebrew',
     hosts_remote_install_aramis: 'Install Aramis (Linux server)',
     hosts_remote_show: 'Show command before running',
+
+    // CLI login (Configure tab in AgentInstallerDialog)
+    cli_login_title: (v) => `Sign in to ${v.tool}`,
+    cli_login_blurb: (v) => `Run \`${v.cmd}\` in your system terminal. Aramis opens the terminal for you — finish the browser-based OAuth or paste your API key when prompted.`,
+    cli_login_run: (v) => `Run ${v.tool} login`,
+    cli_login_install_first: 'Install the CLI first from the "Install" tab — the login button becomes available once it\'s on PATH.',
+
+    // Image paste
+    image_attach: 'Attach image',
+    image_paste_hint: 'Paste images into the composer (Cmd/Ctrl+V) or click the image icon.',
+    image_too_big: (v) => `Image too large (${v.size}). Max 10 MB.`,
+    image_unsupported: 'Only PNG / JPG / WEBP / GIF / AVIF supported.',
+    image_remove: 'Remove',
+    image_uploading: 'Uploading…',
     cli_cfg_clear: 'Clear settings',
     cli_cfg_clear_confirm: 'All saved settings for this CLI will be cleared. Continue?',
     cli_cfg_keep_blank_to_keep: 'Leave blank to keep the current key',

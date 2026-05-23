@@ -4,6 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0a0c" />
+    <!--
+      Content Security Policy — defense-in-depth on top of DOMPurify.
+      * `default-src 'self'` blocks inline event handlers (no onerror= etc.).
+      * `script-src 'self'` permits only the Vite bundle; no inline scripts.
+      * `img-src 'self' data: blob:` allows pasted-image previews + uploaded
+        chat images served from /uploads.
+      * `connect-src` covers same-origin API + SSE + Vazirmatn font CDN.
+      * `frame-ancestors 'none'` blocks click-jacking.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+      font-src 'self' https://cdn.jsdelivr.net data:;
+      img-src 'self' data: blob: https:;
+      media-src 'self' blob:;
+      connect-src 'self' ws: wss:;
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self';
+      object-src 'none';
+    " />
     <title>Aramis</title>
   </head>
   <body class="bg-background text-foreground antialiased">

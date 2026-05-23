@@ -2,13 +2,14 @@
 import { ref, computed, watch } from 'vue';
 import {
   GitBranch, GitCommit, RefreshCw, X, Plus, Minus, FileText, AlertTriangle,
-  CheckSquare, Square, Loader2,
+  CheckSquare, Square, Loader2, FolderSearch,
 } from 'lucide-vue-next';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
 import CopyButton from '@/components/CopyButton.vue';
+import PathPicker from '@/components/PathPicker.vue';
 
 const props = defineProps({ open: Boolean });
 const emit = defineEmits(['update:open']);
@@ -110,6 +111,12 @@ watch(() => props.open, (v) => {
 });
 
 function close() { emit('update:open', false); }
+
+const pickerOpen = ref(false);
+async function pickedPath(p) {
+  repoPath.value = p;
+  await refresh();
+}
 </script>
 
 <template>
@@ -139,13 +146,23 @@ function close() { emit('update:open', false); }
 
       <div class="px-3 py-2 border-b border-border space-y-2">
         <div class="flex items-center gap-2">
-          <Input
-            v-model="repoPath"
-            @keydown.enter="refresh"
-            dir="ltr"
-            :placeholder="t('git_path_placeholder')"
-            class="text-xs font-mono"
-          />
+          <div class="flex-1 min-w-0 rounded-md border border-input bg-background/60 px-2 py-1 flex items-center gap-1.5">
+            <input
+              v-model="repoPath"
+              @keydown.enter="refresh"
+              dir="ltr"
+              :placeholder="t('git_path_placeholder')"
+              class="flex-1 min-w-0 bg-transparent outline-none text-xs font-mono"
+            />
+            <button
+              type="button"
+              class="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+              @click="pickerOpen = true"
+              :title="t('path_picker_open')"
+            >
+              <FolderSearch class="h-3 w-3" />
+            </button>
+          </div>
           <Button size="sm" @click="refresh" :disabled="loading || !repoPath">
             <Loader2 v-if="loading" class="h-3.5 w-3.5 animate-spin" />
             <RefreshCw v-else class="h-3.5 w-3.5" />
@@ -238,4 +255,11 @@ function close() { emit('update:open', false); }
       </div>
     </aside>
   </Transition>
+
+  <PathPicker
+    :open="pickerOpen"
+    :initial-path="repoPath"
+    @update:open="(v) => pickerOpen = v"
+    @pick="pickedPath"
+  />
 </template>

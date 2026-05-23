@@ -2,6 +2,13 @@
 // access is gated by `requireAuth`, but otherwise we assume the operator is
 // trusted (same trust model as the run_command tool). To keep accidental
 // recursion / huge listings cheap, list responses are capped.
+//
+// Hardening notes:
+//   * All user-supplied paths are resolved with `path.resolve` and reject any
+//     null bytes or non-string inputs.
+//   * In production, set `ARAMIS_FS_ROOT` to confine all browsing to a single
+//     subtree (e.g. `/home/aramis/workspaces`). In dev / Electron we trust the
+//     authenticated operator — that's the same trust model `run_command` uses.
 
 import { Router } from 'express';
 import { promises as fs } from 'node:fs';
@@ -14,11 +21,31 @@ fsRouter.use(requireAuth);
 
 const MAX_ENTRIES = 2000;
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MiB
+const FS_ROOT = process.env.ARAMIS_FS_ROOT ? path.resolve(process.env.ARAMIS_FS_ROOT) : null;
 
 function expandHome(p) {
   if (!p) return p;
   if (p === '~' || p.startsWith('~/')) return path.join(os.homedir(), p.slice(1));
   return p;
+}
+
+/**
+ * Normalize a user-supplied path and (optionally) confine it under FS_ROOT.
+ * Throws on null bytes or jail-break attempts so callers can return 400.
+ */
+function safeResolve(p) {
+  if (typeof p !== 'string' || p.includes('\0')) {
+    const err = new Error('invalid path');
+    err.statusCode = 400;
+    throw err;
+  }
+  const abs = path.resolve(expandHome(p));
+  if (FS_ROOT && !(abs === FS_ROOT || abs.startsWith(FS_ROOT + path.sep))) {
+    const err = new Error(`path outside ARAMIS_FS_ROOT (${FS_ROOT})`);
+    err.statusCode = 403;
+    throw err;
+  }
+  return abs;
 }
 
 fsRouter.get('/home', (_req, res) => {
@@ -27,7 +54,7 @@ fsRouter.get('/home', (_req, res) => {
 
 fsRouter.get('/list', async (req, res, next) => {
   try {
-    const target = expandHome(String(req.query.path || os.homedir()));
+    const target = safeResolve(String(req.query.path || os.homedir()));
     const stat = await fs.stat(target);
     if (!stat.isDirectory()) return res.status(400).json({ error: 'not a directory' });
     const raw = await fs.readdir(target, { withFileTypes: true });
@@ -58,8 +85,9 @@ fsRouter.get('/list', async (req, res, next) => {
 
 fsRouter.get('/read', async (req, res, next) => {
   try {
-    const target = expandHome(String(req.query.path || ''));
-    if (!target) return res.status(400).json({ error: 'path required' });
+    const raw = String(req.query.path || '');
+    if (!raw) return res.status(400).json({ error: 'path required' });
+    const target = safeResolve(raw);
     const stat = await fs.stat(target);
     if (!stat.isFile()) return res.status(400).json({ error: 'not a file' });
     if (stat.size > MAX_FILE_BYTES) {
@@ -86,7 +114,7 @@ fsRouter.post('/write', async (req, res, next) => {
   try {
     const { path: p, content } = req.body || {};
     if (!p || typeof content !== 'string') return res.status(400).json({ error: 'path and content required' });
-    const target = expandHome(String(p));
+    const target = safeResolve(String(p));
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, content, 'utf8');
     const stat = await fs.stat(target);

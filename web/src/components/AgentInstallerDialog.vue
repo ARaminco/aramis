@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import {
   Bot, Cpu, Sparkles, Download, Trash2, Check, X, Loader2, AlertTriangle,
   Settings, Eye, EyeOff, Save, ExternalLink, RefreshCw, Wrench, KeyRound, Cog,
-  Terminal, Zap, Copy,
+  Terminal, Zap, Copy, LogIn,
 } from 'lucide-vue-next';
 import { api } from '@/lib/api';
 import { useChatStore } from '@/stores/chat';
@@ -110,6 +110,20 @@ async function rescanPath() {
     bootstrapMsg.value = '';
   } catch (e) { bootstrapMsg.value = e.message; }
   finally { bootstrapLoading.value = false; }
+}
+
+const loginMsg = ref('');
+const loginLoading = ref(false);
+async function runLogin() {
+  loginMsg.value = '';
+  loginLoading.value = true;
+  try {
+    const cmd = `${tool.value} login`;
+    const r = await api.cliOpenTerminal(cmd);
+    if (!r.ok) { loginMsg.value = r.error || 'failed to open terminal'; return; }
+    loginMsg.value = `Opened ${r.terminal || 'terminal'} — finish the login there, then come back.`;
+  } catch (e) { loginMsg.value = e.message; }
+  finally { loginLoading.value = false; }
 }
 
 const selectedManagerAvailable = computed(() => {
@@ -459,6 +473,31 @@ watch(() => props.open, (v) => { if (v) { tool.value = props.initialTool; tab.va
 
       <!-- CONFIGURE -->
       <div v-else-if="tab === 'configure'" class="space-y-3">
+        <!-- Native login — the canonical way to authenticate the CLI. For
+             tools like Claude Code this opens an OAuth flow in the browser
+             that requires a TTY, so we hand it off to the user's terminal. -->
+        <div v-if="isInstalled" class="rounded-lg border border-primary/30 bg-primary/[0.04] p-3 space-y-2">
+          <div class="flex items-start gap-2">
+            <LogIn class="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium">{{ t('cli_login_title', { tool: TOOLS.find((x) => x.id === tool).label }) }}</div>
+              <p class="text-[11px] text-muted-foreground leading-snug mt-0.5">{{ t('cli_login_blurb', { cmd: tool + ' login' }) }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <Button size="sm" :disabled="loginLoading" @click="runLogin">
+              <Loader2 v-if="loginLoading" class="h-3.5 w-3.5 animate-spin" />
+              <Terminal v-else class="h-3.5 w-3.5" />
+              {{ t('cli_login_run', { tool: tool }) }}
+            </Button>
+            <span v-if="loginMsg" class="text-[11px] text-muted-foreground flex-1">{{ loginMsg }}</span>
+          </div>
+        </div>
+        <div v-else class="rounded-md bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
+          <AlertTriangle class="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>{{ t('cli_login_install_first') }}</span>
+        </div>
+
         <div v-if="cfg?.inherits_from_ai_config && !cfg.api_key_set" class="rounded-md bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-xs text-emerald-600 dark:text-emerald-400 flex items-start gap-2">
           <Check class="h-3.5 w-3.5 mt-0.5 shrink-0" />
           <span>{{ t('cli_cfg_inherited') }}</span>

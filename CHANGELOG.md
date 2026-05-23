@@ -11,6 +11,10 @@ All notable changes to **Aramis** are documented here. The format is based on
 > project rule.
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-23
+
+- Production-ready security + paste-image + login flow: Helmet security headers, rate-limited /api/auth, CORS lockdown via CORS_ORIGIN, fatal-stop on dev JWT secret in prod, AES-256-GCM for FTP/CLI keys, DOMPurify XSS sanitization on all rendered markdown, CSP meta tag, fs path-traversal hardening (null bytes rejected, ARAMIS_FS_ROOT confines browsing); image paste/drop/pick in composer with live preview chips + /api/uploads/image (10MiB, image MIME allowlist, unguessable 32-hex IDs); Login buttons that launch `claude login` / `codex login` in the user's system terminal; copy buttons icon-only; PathPicker dialog wired into ModeSwitcher cwd + FileExplorer + GitPanel; syntax-highlighted code blocks via highlight.js + marked-highlight
+
 ## [0.4.3] - 2026-05-23
 
 - Mobile-first overhaul + Claude/Codex visibility: Dialog goes full-screen on phones (no horizontal scroll), all side panels reserve space for macOS traffic-lights so close X is never covered, Claude Code / Codex now stream stderr live (auth errors surface immediately) with empty-prompt guard and startup banner, model/base_url no longer cross-pollinate between providers, SessionImporter groups by project with collapsible folders and search, new PathPicker dialog for browsing the working directory, HostsPanel adds curated remote-install dropdown (Node.js via Volta/apt/dnf, Homebrew, Claude Code, Codex) — one click runs the canonical install script over SSH on the chosen host

@@ -69,6 +69,20 @@ export const api = {
   cliBootstrap: () => request('/cli/bootstrap'),
   cliOpenTerminal: (command) => request('/cli/open-terminal', { method: 'POST', body: JSON.stringify({ command }) }),
   cliRefreshPath: () => request('/cli/refresh-path', { method: 'POST' }),
+
+  // Image uploads (chat composer paste / picker)
+  uploadImage: async (file) => {
+    const fd = new FormData();
+    fd.append('image', file, file.name || 'image');
+    const headers = {};
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${BASE}/uploads/image`, { method: 'POST', headers, body: fd });
+    const text = await res.text();
+    let data; try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    return data;
+  },
   // Streaming install/uninstall — returns an abort function.
   cliInstallStream(tool, manager, onEvent) {
     return cliStreamPlan('install', tool, manager, onEvent);
